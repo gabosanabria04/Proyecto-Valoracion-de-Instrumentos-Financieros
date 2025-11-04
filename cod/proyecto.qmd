@@ -1,5 +1,5 @@
 ---
-title: "Reporte de Proyecto"
+title: "Evaluación Actuarial - Smart Investments S.A."
 author:
 - Paola Espinoza Hernández
 - Gabriel Sanabria Alvarado
@@ -13,3 +13,8 @@ output:
     toc: yes
     df_print: paged
 ---
+
+```{r cargar curva cero cupón}
+bcc <- read.csv("../data/Curva_0C.csv", sep = ";", col.names = c("vencimiento", "colones", "dolares"), dec = ",")
+```
+
