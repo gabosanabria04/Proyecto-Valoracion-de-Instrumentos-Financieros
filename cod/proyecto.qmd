@@ -1,0 +1,15 @@
+---
+title: "Reporte de Proyecto"
+author:
+- Paola Espinoza Hernández
+- Gabriel Sanabria Alvarado
+- Joseph Romero
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: yes
+    number_sections: yes
+  html_document:
+    toc: yes
+    df_print: paged
+---
