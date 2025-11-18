@@ -3,7 +3,7 @@ title: "Evaluación Actuarial - Smart Investments S.A."
 author:
 - Paola Espinoza Hernández
 - Gabriel Sanabria Alvarado
-- Joseph Romero
+- Joseph Romero Chinchilla
 output:
   pdf_document:
     latex_engine: xelatex
