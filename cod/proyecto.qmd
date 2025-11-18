@@ -3,7 +3,7 @@ title: "Evaluación Actuarial - Smart Investments S.A."
 author:
 - Paola Espinoza Hernández
 - Gabriel Sanabria Alvarado
-- Joseph Romero
+- Joseph Romero Chinchilla
 output:
   pdf_document:
     latex_engine: xelatex
@@ -88,9 +88,9 @@ arbol <- arbol_tasa_descuento(r0, u, d, N, dt = 1, tipo = "continua")
 arbol$tasa       # árbol de tasas cortas
 arbol$descuento  # árbol de factores D(t, t+1)
 ```
-
+## Árbol binomial conjunto
 ```{r}
-# Árbol binomial conjunto (acción + tasa)
+# Árbol binomial conjunto
 # S0   : precio inicial de la acción
 # r0   : tasa inicial
 # uS,dS: factores de subida/bajada para la acción
@@ -217,7 +217,7 @@ arbol[[3]]
 # S0, r0 : valores iniciales de acción y tasa
 # uS,dS  : factores up/down de la acción
 # uR,dR  : factores up/down de la tasa
-# qS,qR  : prob. de subida de acción y tasa (escalares o vectores)
+# qR  : prob. de subida de tasa
 # dt     : tamaño de paso en años (ej. 0.5 si cada paso = 6 meses)
 # horizontes : vector de tiempos (en años) donde quieres el valor (ej. c(0,2.5,5,10,15))
 # valor_portafolio : función que recibe (S, r, t) y devuelve el valor del portafolio
@@ -228,22 +228,18 @@ arbol[[3]]
 simular_camino_portafolio <- function(S0, r0,
                                       uS, dS,
                                       uR, dR,
-                                      qS, qR,
+                                      qR,
                                       dt,
                                       horizontes,
                                       valor_portafolio) {
-  # número de pasos necesario para llegar al máximo horizonte
   N_exact <- max(horizontes) / dt
   if (abs(N_exact - round(N_exact)) > 1e-8) {
     stop("max(horizontes) / dt debe ser un entero exacto.")
   }
   N <- as.integer(round(N_exact))
   
-  # asegurar longitud de qS y qR
-  qS <- rep_len(qS, N)
   qR <- rep_len(qR, N)
   
-  # vectores para el camino
   S <- numeric(N + 1)
   r <- numeric(N + 1)
   tiempos <- dt * (0:N)
@@ -251,16 +247,18 @@ simular_camino_portafolio <- function(S0, r0,
   S[1] <- S0
   r[1] <- r0
   
-  # simular el camino
   for (k in 1:N) {
-    upS <- runif(1) < qS[k]
+    q_t <- (exp(r[k]) - dS) / (uS - dS)
+    
+    #q_t <- max(min(q_t, 1), 0)
+    
+    upS <- runif(1) < q_t
     upR <- runif(1) < qR[k]
     
     S[k + 1] <- S[k] * if (upS) uS else dS
     r[k + 1] <- r[k] * if (upR) uR else dR
   }
   
-  # índices de los horizontes en pasos
   pasos <- round(horizontes / dt)
   idx <- pasos + 1  # porque S[1] es t = 0
   
@@ -279,6 +277,7 @@ simular_camino_portafolio <- function(S0, r0,
     valor     = valores
   )
 }
+
 
 ```
 
@@ -310,7 +309,7 @@ simular_portafolio_df <- function(n_sim,
                                   S0, r0,
                                   uS, dS,
                                   uR, dR,
-                                  qS, qR,
+                                  qR,
                                   dt,
                                   horizontes,
                                   valor_portafolio) {
@@ -320,7 +319,7 @@ simular_portafolio_df <- function(n_sim,
       S0, r0,
       uS, dS,
       uR, dR,
-      qS, qR,
+      qR,
       dt,
       horizontes,
       valor_portafolio
@@ -361,7 +360,7 @@ res_df <- simular_portafolio_df(
   S0, r0,
   uS, dS,
   uR, dR,
-  qS, qR,
+  qR,
   dt,
   horizontes,
   valor_portafolio
@@ -369,5 +368,41 @@ res_df <- simular_portafolio_df(
 
 head(res_df)
 
+```
+
+## Documento bien :)
+Inserte árbol precios, tasa y conjunto
+
+# Valor del portafolio
+## Valor de acciones
+### Colones
+Como $u(2) = 1.0001$ y $d(2) = 0.9999$, sabemos que $q = \frac{(1-d(T))}{u(T)-d(T)}$ para cualquier T, entonces $q = 0.5$
+```{r}
+q <- (1-0.9999)/(1.0001 - 0.9999)
+q
+```
+Para estimar los parámetros de subida  bajada de las acciones, utilizamos el Modelo Cox-Ross-Rubinstein. Por tanto, usamos la fórmula $\sigma^2*\Delta t = \ln(\frac{S_{t + \Delta t}}{S_t})$; en este caso, tanto las acciones como las tasas avanzan mensualmente, por tanto, $\Delta t = 1$
+```{r}
+S_nac <- readxl::read_excel("../data/precio_acciones_nacionales.xlsx")
+```
+
+```{r, warning=FALSE}
+library(dplyr)
+
+S_nac <- S_nac %>% arrange(Fecha)
+
+S_nac <- S_nac %>%
+  mutate(ret_log = log(Precio / lag(Precio)))
+
+sigma <- var(S_nac$ret_log, na.rm = TRUE)
+
+sigma
+```
+Ahora, utilizando $u = \frac 1d = e^{\sigma \Delta t}$, obtenemos $u = 1.003618$ y $d = 0.9963954$
+```{r}
+uS <- exp(sigma)
+uS
+dS <- exp(-sigma)
+dS
 ```
 
