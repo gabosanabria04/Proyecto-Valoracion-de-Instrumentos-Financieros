@@ -371,7 +371,150 @@ head(res_df)
 ```
 
 ## Documento bien :)
-Inserte árbol precios, tasa y conjunto
+# Funciones Utilizadas
+## Precios Forward
+```{r, echo = FALSE}
+set.seed(123) 
+```
+
+```{r, calcular precio forward}
+forward <- function(t, S, T, moneda){
+  if(t == 0){ #versión normal
+    idS <- which.min(abs(curva$vencimiento - S))
+    idT <- which.min(abs(curva$vencimiento - T))
+    rhoS <- curva[[moneda]][idS]/100
+    rhoT <- curva[[moneda]][idT]/100
+    PS <- ((1+rhoS)^-S)
+    PT <- ((1+rhoT)^-T)
+    return(PT/PS)
+  }
+}
+```
+
+## Tasas cortas
+```{r}
+# Función para generar árbol de tasas de interés
+# Recibe u(2), d(2), número de iteraciones
+ho_lee <- function(u_2, d_2, n, moneda){
+  k <- d_2/u_2
+  q <- (1-d_2)/(u_2 - d_2)
+  r_0 <- -log(forward(0, 0, 1/12, moneda))
+  U <- 0
+  S <- 0
+  # Seguir un camino
+  bern <- rbinom(n = n, size = 1, prob = q) #generar omegas
+  resultados <- data.frame(periodo = 1:(n+1),
+                           r_t  = rep(NA_real_, n+1),
+                           U_t  = rep(NA_real_, n+1),
+                           d = rep(NA_real_, n + 1))
+  resultados$r_t[1] <- r_0
+  resultados$U_t[1] <- 0
+  # Excluimos el caso para d(2)
+  S <- S + 1/12 #incrementos mensuales
+  if(bern[1] == 1){
+    U <- U + 1
+  }
+  resultados$U_t[1+1] <- U
+  d <- d_2
+  resultados$d[2] <- d
+  r_t <- -log(forward(0, S, S+1/12, moneda)) - log(d) + U*log(k)
+  resultados$r_t[1+1] <- r_t
+  for(i in 2:n){
+    S <- S + 1/12 #incrementos mensuales
+    if(bern[i] == 1){
+      U <- U + 1
+    }
+    resultados$U_t[i+1] <- U
+    d <- k^(i-1)/((1-q)*k^(i-1) + q)
+    resultados$d[i+1] <- d
+    r_t <- -log(forward(0, S, S+1/12, moneda)) - log(d) + U*log(k)
+    resultados$r_t[i+1] <- r_t
+  }
+  return(resultados)
+}
+```
+
+## Precios
+```{r}
+precios_arriba <- function(u_2, d_2, n, moneda){
+  k <- d_2/u_2
+  q <- (1-d_2)/(u_2 - d_2)
+  resultados <- data.frame(periodo = 0:n,
+                           precio  = rep(NA_real_, n+1),
+                           U_t  = 0:n)
+  # Se construye la rama de arriba
+  u <- function(t){
+    u <- 1/((1-q)*k^(t) + q)
+  }
+  # Separamos las primeras tres
+  resultados$precio[1] <- forward(0, 0, n/12, moneda) #Precio actual
+  resultados$precio[2] <- u(n)*forward(0, 1/12, n/12, moneda) #Primer salto
+  resultados$precio[3] <- u(n - 1)*resultados$precio[2]/(u_2*forward(0, 1/12, 2/12, moneda)) #Segundo salto
+  i <- 3
+  while(n - i > 1){
+    t <- i/12
+    resultados$precio[i + 1] <- u(n - i + 1)*resultados$precio[i]/(u(i)*forward(0, t - 1/12, t, moneda))
+    i <- i + 1
+  }
+  resultados$precio[n] <- u_2*resultados$precio[n - 1]/(u(n - 1)*forward(0, n - 2/12, n - 1/12, moneda))
+  resultados$precio[n + 1] <- 1
+  return(resultados)
+}
+```
+
+```{r}
+otros_precios <- function(u_2, d_2, n, moneda, omegas){
+  sup <- precios_arriba(u_2, d_2, n, moneda)
+  k <- d_2/u_2
+  q <- (1-d_2)/(u_2 - d_2)
+  resultados <- data.frame(periodo = 1:(n+1),
+                           precio  = sup$precio, #primero y último son iguales
+                           U_t  = rep(NA_real_, n+1))
+  resultados$U_t[1] <- 0
+  for(i in 2:n){
+    resultados$U_t[i] <- resultados$U_t[i - 1] + omegas[i - 1]
+    resultados$precio[i] <- k^((i - 1 - resultados$U_t[i])*(n - i + 1))*sup$precio[i] #Multiplicar factor la cantidad de veces necesaria
+  }
+  return(resultados)
+}
+```
+
+
+## Árbol Conjunto
+```{r}
+conjunto <- function(u_2, d_2, n, moneda, omegas, uS, dS, accion){
+  r <- ho_lee(u_2, d_2, n, moneda)$r_t
+  print(r)
+  k <- d_2/u_2
+  q <- (1-d_2)/(u_2 - d_2)
+  resultados <- data.frame(periodo = 1:(n+1),
+                           S  = rep(NA_real_, n+1),
+                           proba_S = rep(NA_real_, n+1),
+                           U_t  = rep(NA_real_, n+1))
+  resultados$S[1] <- accion
+  # Separamos la primera iteración
+  resultados$proba_S[2] <- (exp(r[1]) - dS)/(uS - dS)
+  bern <- rbinom(n = 1, size = 1, prob = resultados$proba_S[2])
+  if(bern == 1){
+    resultados$S[2] <- resultados$S[1]*uS
+  }
+  else{
+    resultados$S[2] <- resultados$S[1]*dS
+  }
+  for (i in 2:n){
+    resultados$proba_S[i + 1] <- (exp(r[i]) - dS)/(uS - dS)
+    bern <- rbinom(n = 1, size = 1, prob = resultados$proba_S[i + 1])
+    if(bern == 1){
+      resultados$S[i + 1] <- resultados$S[i]*uS
+    }
+    else{
+      resultados$S[i + 1] <- resultados$S[i]*dS
+    }
+  }
+  return(resultados)
+}
+```
+
 
 # Valor del portafolio
 ## Valor de acciones
