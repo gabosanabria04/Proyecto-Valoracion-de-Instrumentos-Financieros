@@ -41,7 +41,7 @@ Joseph Romero Chinchilla
 
 \subsection{Teorema fundamental de la valorizaci\'on}
 
-Sea \(\{H_s\}_{s \geq 0}\) la secuencia de flujos de efectivo generados por el portafolio y sea \(D(t,s)\) el factor estoc\'astico de descuento entre los tiempos \(t\) y \(s\), con \(0 \leq t \leq s\). Bajo la medida de riesgo neutral \(\mathbb{Q}\), el \emph{teorema fundamental de la valorizaci\'on} establece que el valor del portafolio en el tiempo \(t\) viene dado por
+Sea \(\{H_s\}_{s \geq 0}\) la secuencia de flujos de efectivo generados por el portafolio y sea \(D(t,s)\) el factor estoc\'astico de descuento entre los tiempos \(t\) y \(s\), con \(0 \leq t \leq s\). Bajo la medida de riesgo neutral \(\mathbb{Q}\), el teorema fundamental de la valorizaci\'on establece que el valor del portafolio en el tiempo \(t\) viene dado por
 \begin{equation}
   V(t)
   \;=\;
@@ -69,11 +69,12 @@ En el proyecto se trabaja con la \emph{curva cero cup\'on} en \(t=0\) para colon
 \begin{equation}
   P(0,T)
   \;=\;
-  e^{-\rho(0,T)\,\tau(0,T)}
+  \frac{1}{\bigl(1+\rho(0,T)\bigr)^{\tau(0,T)}}
   \;=\;
-  e^{-\rho(0,T)\,T}.
+  \frac{1}{\bigl(1+\rho(0,T)\bigr)^{T}}.
   \label{eq:P0T}
 \end{equation}
+
 
 Ademas para \(t \leq T\) el precio del bono cero cup\'on bajo la medida de riesgo neutral cumple
 \begin{equation}
@@ -116,98 +117,91 @@ En una trayectoria simulada del \'arbol conjunto acci\'on–tasa, los flujos \em
 \subsection{Probabilidades bajo la medida de riesgo neutral}
 
 Para que el modelo binomial sea consistente con el mercado y no permita
-oportunidades de arbitraje se impone, en cada periodo, una relaci\'on entre
-los factores de subida y bajada y el factor libre de riesgo.
+oportunidades de arbitraje, se impone en cada período una relación entre
+los factores de subida y bajada y el activo libre de riesgo.
+
 \begin{itemize}
-  \item para el \'arbol del precio de la acci\'on,
+  \item para el árbol del precio de la acción,
   \[
-    d_S \;<\; \frac{1}{1+R} \;<\; u_S,
+    d_S \;<\; 1 + R(t,t+1) \;<\; u_S,
   \]
-  \item para el \'arbol de la tasa corta (factores de descuento),
+  donde $R(t,t+1)$ es la tasa libre de riesgo (de un período) obtenida a partir
+  de la curva bono cero cupón;
+
+  \item para el árbol de la tasa corta, trabajado en términos de factores de
+  descuento para los precios de bonos cero cupón $P(t,T)$, se exige que en
+  cada vencimiento $T$ los factores cumplan
   \[
-    d_R(T) \;<\; \frac{1}{1+R(0,1)} \;<\; u_R(T),
+    d_R(T) \;<\; 1 \;<\; u_R(T),
   \]
 \end{itemize}
-donde \(u_S,d_S\) son los factores de subida y bajada del precio de la acci\'on,
-\(u_R(T),d_R(T)\) los factores de subida y bajada para los factores de
-descuento en el horizonte \(T\), y \(R\) representa la tasa libre de riesgo
-relevante en el periodo.
 
-Bajo la medida de riesgo neutral \(\mathbb{Q}\), las probabilidades de subida se
-denotan en los apuntes por
+Aquí $u_S,d_S$ son los factores de subida y bajada del precio de la acción,
+mientras que $u_R(T),d_R(T)$ son los factores de subida y bajada para los
+factores de descuento asociados a un bono cero cupón con vencimiento $T$.
+
+\medskip
+
+Bajo la medida de riesgo neutral $\mathbb{Q}_S \times \mathbb{Q}_r$, las probabilidades de subida:
 \[
-  \tilde q_1(t)
+  \hat q_t
   \;=\;
-  \text{probabilidad de subida en el \'arbol de tasa corta en el tiempo } t,
+  \text{probabilidad de subida en el árbol de tasa corta.}
 \]
 \[
-  \tilde q_2(t)
+  \hat q_t(U_t)
   \;=\;
-  \text{probabilidad de subida del precio de la acci\'on en el \'arbol de acciones en el tiempo } t.
+  \text{probabilidad de subida del precio de la acción en el nodo $U_t$ del árbol de acciones}.
 \]
 
-En el caso de un periodo para la tasa corta, con factores binomiales
-\(u_R(2)\) y \(d_R(2)\), la condici\'on de ausencia de arbitraje implica que el
-factor de descuento esperado bajo \(\mathbb{Q}\) debe coincidir con el factor
-libre de riesgo:
+La  condición de ausencia de arbitraje implica:
 \[
-  \tilde q_1(0)\,u_R(2)
+  \hat q\,u_R(2)
   \;+\;
-  \bigl(1-\tilde q_1(0)\bigr)\,d_R(2)
+  \bigl(1-\hat q\bigr)\,d_R(2)
   \;=\;
-  1.
+  1,
 \]
-De aqu\'i se obtiene la expresi\'on usada en el proyecto para la probabilidad
-neutral al riesgo en el \'arbol de tasa corta,
+de donde se obtiene
 \begin{equation}
-  \tilde q_1(0)
+  \hat q
   \;=\;
   \frac{1 - d_R(2)}{\,u_R(2) - d_R(2)\,}.
   \label{eq:q1-un-paso}
 \end{equation}
 En particular, con los factores binomiales indicados en las especificaciones
-t\'ecnicas del proyecto
+técnicas del proyecto
 \[
   u_R(2) = 1.0001,
   \qquad
   d_R(2) = 0.9999,
 \]
-se tiene \(\tilde q_1(0) = \frac{1-0.9999}{1.0001-0.9999} = 0.5\),.
+se tiene
+\[
+  \hat q
+  \;=\;
+  \frac{1-0.9999}{1.0001-0.9999}
+  \;=\;
+  0.5.
+\]
+
+
 
 \medskip
 
-Ademas:
+Además:
 \begin{itemize}
-  \item las probabilidades de subida del precio de la acci\'on \(\tilde q_2(t)\)
-  son \emph{variables y estoc\'asticas}, porque dependen de la trayectoria
-  seguida por la tasa corta \(r_t\);
-  \item las probabilidades bajo \(\mathbb{Q}\) se eligen de forma que el modelo
-  sea libre de arbitraje y los precios te\'oricos sean consistentes con la
-  curva cero cup\'on observada.
+  \item las probabilidades de subida del precio de la acción $\tilde q_2(t)$
+  son \emph{variables y estocásticas}, porque dependen de la trayectoria
+  seguida por la tasa corta $r_t$;
+
+  \item las probabilidades bajo $\mathbb{Q}$ se eligen de forma que el modelo
+  sea libre de arbitraje y los precios teóricos sean consistentes con la
+  curva cero cupón observada (es decir, con los precios $P(0,T)$ construidos
+  a partir de la curva $\rho(0,T)$).
 \end{itemize}
 
-De manera esquem\'atica, el proceso descrito  para construir el
-\'arbol conjunto acci\'on–tasa y las simulaciones del portafolio es:
-\begin{enumerate}
-  \item En el tiempo \(t\) se conoce la tasa corta \(r_t\) asociada al nodo
-        alcanzado en el \'arbol de tasas.
-  \item Con esa informaci\'on se calcula la probabilidad neutral al riesgo
-        \(\tilde q_1(t)\) correspondiente a la subida en el siguiente paso del
-        \'arbol de tasa corta y se generan los posibles valores de la tasa en
-        \(t+1\).
-  \item De forma an\'aloga se determina la probabilidad de subida
-        \(\tilde q_2(t)\) en el \'arbol de la acci\'on y se obtienen los
-        posibles valores de \(S_{t+1}\).
-  \item El procedimiento se repite recursivamente a partir del nuevo tiempo
-        \(t+1\), utilizando siempre las tasas y precios obtenidos en el \'arbol
-        para actualizar las probabilidades \(\tilde q_1(t+1)\) y
-        \(\tilde q_2(t+1)\) bajo la medida \(\mathbb{Q}\).
-\end{enumerate}
 
-Con esta construcci\'on, el modelo binomial conjunto es compatible con la
-curva cero cup\'on del mercado, est\'a formulado bajo la medida de riesgo
-neutral y permite valorar de forma coherente tanto los instrumentos de renta
-fija como las acciones del portafolio.
 
 
 \subsection{\'Arboles binomiales y modelo CRR}
@@ -221,14 +215,14 @@ Sea \(S_0\) el precio inicial de la acci\'on. En el modelo de Cox–Ross–Rubin
 \]
 donde \(N\) es el n\'umero total de pasos hasta el horizonte de an\'alisis.
 
-En los apuntes se obtiene que, si la volatilidad instant\'anea del activo es \(\sigma\), la volatilidad de los incrementos logar\'itmicos a un paso \(\Delta t\) es aproximadamente \(\sigma^2 \Delta t\) y se tiene
+La volatilidad instant\'anea del activo es \(\sigma\), la volatilidad de los incrementos logar\'itmicos a un paso \(\Delta t\) es aproximadamente \(\sigma^2 \Delta t\) y se tiene
 \begin{equation}
   u(\Delta t) = e^{\sigma\sqrt{\Delta t}},
   \qquad
   d(\Delta t) = e^{-\sigma\sqrt{\Delta t}}.
   \label{eq:u-d-CRR}
 \end{equation}
-Estos par\'ametros se estiman a partir de la serie de precios hist\'oricos de la acci\'on (acciones locales e internacionales, seg\'un corresponda).
+Estos par\'ametros se estiman a partir de la serie de precios hist\'oricos de la acci\'on .
 
 \subsubsection{\'Arbol de tasa corta y factores de descuento}
 
@@ -318,14 +312,17 @@ Estas medidas se calculan para cada horizonte \(t>0\), separando los resultados 
 En la Secci\'on II del proyecto se analiza el impacto de adquirir 200 acciones adicionales de Nacional de Energ\'ia S.A. al final del a\~no 15, utilizando distintas estrategias. Todas ellas se valoran bajo la misma l\'ogica de \eqref{eq:PFV} y los \'arboles binomiales construidos:
 
 \begin{itemize}
-  \item \textbf{Compra directa}: se compra la acci\'on en \(T=15\) al precio de mercado \(S_{15}\). El flujo adicional en ese horizonte es \(200\,S_{15}\).
-  \item \textbf{Contrato forward}: se firma hoy un contrato forward con precio fijo \(K_f\) y precio del contrato igual a cero en \(t=0\). El flujo en \(T=15\) es \(200\,(S_{15}-K_f)\). El valor de \(K_f\) se determina de forma que el precio del forward sea cero, utilizando la curva cero cup\'on y el \'arbol de la acci\'on (teor\'ia vista en clase).
+\item \textbf{Compra directa}: en esta estrategia no se fija hoy ningún
+precio; simplemente se adquieren las 200 acciones en \(T=15\) al precio
+de mercado \(S_{15}\). 
+
+  \item \textbf{Contrato forward}: se firma hoy un contrato forward con precio fijo \(K_f\) y precio del contrato igual a cero en \(t=0\). El flujo en \(T=15\) es \(200\,(S_{15}-K_f)\). El valor de \(K_f\) se determina de forma que el precio del forward sea cero, utilizando la curva cero cup\'on y el \'arbol de la acci\'on.
   \item \textbf{Contrato de futuro}: el futuro tiene precio marcado a mercado con ajustes de m\'argen cada seis meses. En el \'arbol, esto implica una secuencia de flujos intermedios de m\'argen que deben acumularse al horizonte 15 usando las tasas simuladas, adem\'as del flujo final asociado a la posici\'on en acciones.
   \item \textbf{Opci\'on call europea}: se compra hoy una call europea que permite adquirir las 200 acciones en \(T=15\) a un precio de ejercicio \(K = K_f - 5000\). En \(T=15\), el flujo adicional es
   \[
     200\,\max\{S_{15} - K, 0\}.
   \]
-  \item \textbf{Opci\'on call americana}: se compra una call americana con el mismo precio de ejercicio \(K = K_f - 5000\) y vencimiento en \(T=15\). A diferencia de la call europea, la call americana puede ejercerse en cualquier momento hasta \(T=15\), por lo que en el \'arbol se debe evaluar nodo a nodo si conviene ejercer o mantener la opci\'on, siguiendo la teor\'ia vista en clase.
+  \item \textbf{Opci\'on call americana}: se compra una call americana con el mismo precio de ejercicio \(K = K_f - 5000\) y vencimiento en \(T=15\). A diferencia de la call europea, la call americana puede ejercerse en cualquier momento hasta \(T=15\), por lo que en el \'arbol se debe evaluar nodo a nodo si conviene ejercer o mantener la opci\'on.
 \end{itemize}
 
 En todos los casos, el portafolio final en \(T=15\) se obtiene sumando el valor de la cartera original m\'as el efecto adicional de cada estrategia. Luego, se calcula el \emph{escenario esperado num\'erico} (promedio de simulaciones) para comparar las distintas alternativas, tal como solicita el enunciado.
