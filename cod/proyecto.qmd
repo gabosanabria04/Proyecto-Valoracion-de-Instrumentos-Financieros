@@ -483,37 +483,53 @@ otros_precios <- function(u_2, d_2, n, moneda, omegas){
 ## Árbol Conjunto
 ```{r}
 conjunto <- function(u_2, d_2, n, moneda, omegas, uS, dS, accion){
-  r <- ho_lee(u_2, d_2, n, moneda)$r_t
+  res <- ho_lee(u_2, d_2, n, moneda, omegas)
+  r <- res$r_t
   print(r)
   k <- d_2/u_2
   q <- (1-d_2)/(u_2 - d_2)
   resultados <- data.frame(periodo = 1:(n+1),
                            S  = rep(NA_real_, n+1),
                            proba_S = rep(NA_real_, n+1),
-                           U_t  = rep(NA_real_, n+1))
+                           U_t  = res$U_t)
   resultados$S[1] <- accion
   # Separamos la primera iteración
-  q <- ifelse(exp(r[1]) > uS, (exp(log(uS)) - dS)/(uS - dS), ifelse(exp(r[1]) < dS, (exp(log(dS)) - dS)/(uS - dS), (exp(r[1]) - dS)/(uS - dS)))
-  bern <- rbinom(n = 1, size = 1, prob = q)
+  q_i <- ifelse(exp(r[1]) > uS, (exp(log(uS)) - dS)/(uS - dS), ifelse(exp(r[1]) < dS, (exp(log(dS)) - dS)/(uS - dS), (exp(r[1]) - dS)/(uS - dS)))
+  print(q_i)
+  print(q)
+  bern <- rbinom(n = 1, size = 1, prob = q_i)
   if(bern == 1){
     resultados$S[2] <- resultados$S[1]*uS
-    resultados$proba_S[2] <- q
+    resultados$proba_S[2] <- q_i
   }
   else{
     resultados$S[2] <- resultados$S[1]*dS
-    resultados$proba_S[2] <- 1 - q
+    resultados$proba_S[2] <- 1 - q_i
   }
   for (i in 2:n){
     q_i <- ifelse(exp(r[i]) > uS, (exp(log(uS)) - dS)/(uS - dS), ifelse(exp(r[i]) < dS, (exp(log(dS)) - dS)/(uS - dS), (exp(r[i]) - dS)/(uS - dS)))
+    print(q_i)
     bern <- rbinom(n = 1, size = 1, prob = q_i)
     print(bern)
     if(bern == 1){
       resultados$S[i + 1] <- resultados$S[i]*uS
-      resultados$proba_S[i + 1] <- q_i
+      if(omegas[i - 1] == 1){
+        resultados$proba_S[i + 1] <- resultados$proba_S[i]*q_i*q
+      }
+      else{
+        resultados$proba_S[i + 1] <- resultados$proba_S[i]*q_i*(1 - q)
+      }
+      
     }
     else{
       resultados$S[i + 1] <- resultados$S[i]*dS
-      resultados$proba_S[i + 1] <- 1 - q_i
+      if(omegas[i - 1] == 1){
+        resultados$proba_S[i + 1] <- resultados$proba_S[i]*(1 - q_i)*q
+      }
+      else{
+        resultados$proba_S[i + 1] <- resultados$proba_S[i]*(1 - q_i)*(1 - q)
+      }
+      
     }
   }
   return(resultados)
