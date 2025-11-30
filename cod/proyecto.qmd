@@ -535,6 +535,24 @@ conjunto <- function(u_2, d_2, n, moneda, omegas, uS, dS, accion){
   return(resultados)
 }
 ```
+## Opción Europea: simulación
+```{r}
+# contrato: precio del contrato, pagado en el momento 0
+# K: precio de ejercicio del contrato
+# nsim: número de simulaciones
+# omega_sim: lista de omegas
+# cant: cantidad de acciones
+europea <- function(u_2, d_2, n, moneda, omega_sim, uS, dS, accion, contrato, K, nsim, cant){
+  sim_S <- data.frame(aporte = rep(NA_real_, nsim))
+
+  for(i in 1:nsim){
+    omegas <- omega_sim[[i]]
+    camino <- conjunto(u_2, d_2, n, moneda, omegas, uS, dS, accion)
+    sim_S$aporte[i] <- cant*(max(camino$S[n + 1] - K, 0)-exp(sum(camino$r_t))*contrato)
+  }
+  return(sim_S)
+}
+```
 
 
 # Valor del portafolio
