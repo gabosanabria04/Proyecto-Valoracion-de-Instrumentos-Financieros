@@ -1,0 +1,111 @@
+---
+title: "K_forward"
+format: html
+editor: visual
+---
+
+
+```{r}
+curva <- read.csv2("Proyecto_valoracion/data/Curva_0C.csv")
+```
+
+
+```{r}
+
+
+S0      <- 24000      # precio de acción de hoy (colones)
+T_años <- 15      
+tiempo_y <- 12         # (mensual)
+n_steps <- T_años * tiempo_y
+N       <- 10000      # n de simulaciones
+
+u_S <- 1.0001        
+d_S <- 0.9999 
+
+```
+
+```{r}
+zero_rate_colones <- function(T_obj, curva){
+
+    t       <- curva[["Vencimiento..Años."]]
+    rho_col <- curva[["Curva.Cero.Cupón.BCCR..Colones."]] / 100 
+    
+    rho_T <- approx(x = t, y = rho_col, xout = T_obj)$y
+    return(rho_T)
+  }
+T_obj <- 15
+rho_15 <- zero_rate_colones(T_obj, curva)   # tasa anual efectiva a 15 años 
+
+r_m <- (1 + rho_15)^(1/tiempo_y) - 1   # tasa por periodo mensual
+
+## binomial
+q_tilde <- (1 + r_m - d_S) / (u_S - d_S)
+q_tilde
+
+
+
+
+
+
+```
+
+## Simulación Monte Carlo
+
+```{r}
+set.seed(123)  # para reproducibilidad
+
+D_0_15 <- numeric(N)  # factores de descuento por simulación
+S_15   <- numeric(N)  # precios de la acción al año 15 por simulación
+
+for (i in 1:N) {
+  S_t <- S0
+  D_t <- 1
+  
+  for (k in 1:n_steps) {
+    # 2.1. Simular movimiento de la acción (binomial bajo Q)
+    if (runif(1) < q_tilde) {
+      S_t <- S_t * u_S
+    } else {
+      S_t <- S_t * d_S
+    }
+    
+    # 2.2. Actualizar factor de descuento con tasa libre de riesgo r_m
+    D_t <- D_t / (1 + r_m)
+  }
+  
+  S_15[i]   <- S_t
+  D_0_15[i] <- D_t
+}
+
+## Construimos el data.frame sim
+sim <- data.frame(
+  D_0_15 = D_0_15,
+  S_15   = S_15
+)
+
+str(sim)
+head(sim)
+
+
+## Calcular Kf por Monte Carlo
+
+Kf_mc <- sum(sim$D_0_15 * sim$S_15) / sum(sim$D_0_15)
+Kf_mc
+
+## 4. Comparar con fórmula teórica S0 / P(0,15)
+
+## P(0,15) desde la curva, usando la misma rho_15
+P0T <- 1 / (1 + rho_15)^T_obj
+Kf_teorico <- S0 / P0T
+
+Kf_mc
+Kf_teorico
+
+
+```
+```{r}
+## Verificar (tiene que dar cero)
+V0_forward_mc <- mean(sim$D_0_15 * (sim$S_15 - Kf_mc))
+V0_forward_mc
+```
+
