@@ -730,4 +730,53 @@ resumen_mc <- apply(res_df[ , -1],
 resumen_mc
 
 ```
+```{r}
+res_df
+
+```
+
+```{r}
+VaR <- function(x, p) {
+  quantile(x, probs = p, na.rm = TRUE)
+}
+
+CVaR <- function(x, p, type = "lower") {
+  v <- quantile(x, probs = p, na.rm = TRUE)
+  
+  if (type == "lower") {
+    mean(x[x <= v], na.rm = TRUE)
+  } else {
+    mean(x[x >= v], na.rm = TRUE)
+  }
+}
+
+```
+
+```{r}
+horizontes <- c("t_0", "t_2.5", "t_5", "t_10", "t_15")
+
+resultados_riesgo <- lapply(horizontes, function(h) {
+  
+  x <- res_df[[h]]
+  
+  data.frame(
+    Horizonte = h,
+    
+    # Escenario esperado
+    Media = mean(x),
+    
+    # Escenario pesimista (95%)
+    VaR_95  = VaR(x, 0.05),
+    CVaR_95 = CVaR(x, 0.05, type = "lower"),
+    
+    # Escenario optimista (30%)
+    VaR_30  = VaR(x, 0.70),
+    CVaR_30 = CVaR(x, 0.70, type = "upper")
+  )
+})
+
+tabla_riesgo <- do.call(rbind, resultados_riesgo)
+tabla_riesgo
+
+```
 
