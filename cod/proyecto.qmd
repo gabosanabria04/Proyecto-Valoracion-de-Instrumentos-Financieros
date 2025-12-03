@@ -588,3 +588,143 @@ dS <- exp(-sigma)
 dS
 ```
 
+
+```{r}
+curva$colones <- curva$colones / 100
+curva$dolares <- curva$dolares / 100
+
+# --- Factores de descuento ---
+P_col <- function(T) {
+  r <- curva$colones[curva$vencimiento == T]
+  (1 + r)^(-T)
+}
+
+P_usd <- function(T) {
+  r <- curva$dolares[curva$vencimiento == T]
+  (1 + r)^(-T)
+}
+
+```
+
+## Valor esperado teórico en t=0
+
+```{r}
+
+#Bonos cero cupón (colones) 
+nom_cero_col <- 10000000
+T_cero_col   <- c(3, 7, 12, 15, 20)
+
+V0_ceros_col <- sum(nom_cero_col * sapply(T_cero_col, P_col))
+
+# Bonos cero cupón (dólares)
+nom_cero_usd <- 15000
+T_cero_usd   <- c(5, 10, 16)
+
+V0_ceros_usd <- sum(nom_cero_usd * sapply(T_cero_usd, P_usd))
+
+# ---- Acciones ----
+V0_acc_col  <- 500 * 24000
+V0_acc_usd  <- 300 * 120
+
+```
+
+```{r}
+pv_bono_cupon_col <- function(nominal, tasa_anual, freq, T_total) {
+  tiempos <- seq(1/freq, T_total, by = 1/freq)
+  cupon   <- nominal * tasa_anual / freq
+  
+  sum(sapply(tiempos, function(t) {
+    T_cercano <- curva$vencimiento[which.min(abs(curva$vencimiento - t))]
+    cupon * P_col(T_cercano)
+  })) + nominal * P_col(T_total)
+}
+
+
+V0_cupon_col <- 
+  pv_bono_cupon_col(20000000, 0.03, 12, 10) +
+  pv_bono_cupon_col(20000000, 0.05, 4,  15) +
+  pv_bono_cupon_col(20000000, 0.08, 1,  17)
+
+
+```
+
+
+```{r}
+pv_bono_cupon_usd <- function(nominal, tasa_anual, freq, T_total) {
+  tiempos <- seq(1/freq, T_total, by = 1/freq)
+  cupon   <- nominal * tasa_anual / freq
+  
+  sum(sapply(tiempos, function(t) {
+    T_cercano <- curva$vencimiento[which.min(abs(curva$vencimiento - t))]
+    cupon * P_usd(T_cercano)
+  })) + nominal * P_usd(T_total)
+}
+
+V0_cupon_usd <- pv_bono_cupon_usd(20000, 0.07, 2, 15)
+
+```
+
+```{r}
+V0_col <- V0_ceros_col + V0_cupon_col + V0_acc_col
+V0_usd <- V0_ceros_usd + V0_cupon_usd + V0_acc_usd
+
+E0 <- 540  # poné el que estén usando
+
+V0_total <- V0_col + V0_usd * E0
+
+data.frame(
+  Moneda = c("Colones", "Dólares", "Total en colones"),
+  Valor  = c(V0_col, V0_usd, V0_total)
+)
+
+```
+
+```{r}
+
+set.seed(123)
+
+S0 <- 100
+r0 <- 0.05
+uS <- 1.1; dS <- 0.9
+uR <- 1.1; dR <- 0.9
+qR <- 0.5
+dt <- 0.5
+horizontes <- c(0, 2.5, 5, 10, 15)
+
+valor_portafolio <- function(S, r, t) {
+  50 * S + 1000 * exp(-r * (15 - t))
+}
+
+res_df <- simular_portafolio_df(
+  n_sim = 10000,   # Monte Carlo 
+  S0, r0,
+  uS, dS,
+  uR, dR,
+  qR,
+  dt,
+  horizontes,
+  valor_portafolio
+)
+
+head(res_df)
+
+
+```
+
+```{r}
+resumen_mc <- apply(res_df[ , -1],  
+                    2,
+                    function(x) {
+                      c(
+                        media = mean(x),
+                        sd    = sd(x),
+                        p5    = quantile(x, 0.05),
+                        p50   = quantile(x, 0.50),
+                        p95   = quantile(x, 0.95)
+                      )
+                    })
+
+resumen_mc
+
+```
+
