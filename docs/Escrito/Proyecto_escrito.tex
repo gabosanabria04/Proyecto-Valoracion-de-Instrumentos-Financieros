@@ -355,21 +355,103 @@ Finalmente, se resumen las especificaciones t\'ecnicas que condicionan todo el a
 
 \section{Metodología}
 
-\subsection{Valor del portafolio en $t = 0$}
+La valoración del portafolio de \textit{Smart Investments} se llevó a cabo mediante una combinación de técnicas de valoración determinista en el instante inicial \(t=0\) y simulación estocástica para horizontes futuros, utilizando un enfoque consistente con la curva cero cupón provista y modelos binomiales para tasas de interés y precios accionarios.
 
-\subsection{Valor del portafolio para $t > 0$}
+\subsection{Curva cero cupón y tasas forward}
 
-\subsection{Escenarios esperados, pesimistas y optimistas}
+El punto de partida del análisis es la curva cero cupón en colones y dólares, suministrada en formato CSV, la cual especifica las tasas spot \(\rho(0,T)\) para distintos vencimientos \(T\). Dicha curva constituye la única fuente de información de tasas en el instante \(t=0\).
 
-\subsection{Simulación numérica}
+A partir de la curva cero cupón se definen los factores de descuento como:
+\[
+P(0,T) = (1 + \rho(0,T))^{-T},
+\]
+donde \(T\) se expresa en años.
+
+Con estos factores de descuento se construyen las tasas \textit{forward} mediante la relación estándar:
+\[
+F(0; S,T) = \frac{P(0,T)}{P(0,S)}, \qquad 0 \leq S < T,
+\]
+las cuales garantizan que toda la estructura de tasas utilizada en el modelo sea consistente con la curva cero cupón original. En particular, los factores de descuento empleados posteriormente en la valoración y simulación se derivan directamente de esta función \texttt{forward}.
+
+\subsection{Modelo de tasas de interés: Ho--Lee discreto}
+
+La evolución estocástica de las tasas de interés se modela mediante el esquema binomial de Ho--Lee en tiempo discreto. Bajo este modelo, la tasa corta evoluciona en pasos mensuales siguiendo factores multiplicativos \(u(2)\) y \(d(2)\), definidos según el enunciado del proyecto. La probabilidad neutral al riesgo asociada al modelo se obtiene como:
+\[
+q = \frac{1 - d(2)}{u(2) - d(2)}.
+\]
+
+La tasa corta inicial se calibra utilizando la tasa \textit{forward} de corto plazo extraída de la curva cero cupón:
+\[
+r_0 = -\log\bigl(P(0,\Delta t)\bigr),
+\]
+con \(\Delta t = 1/12\) años. En cada paso del tiempo, la tasa corta se ajusta de manera que el modelo replique exactamente la estructura \textit{forward} observada en \(t=0\), asegurando ausencia de arbitraje.
+
+\subsection{Modelo del precio de las acciones}
+
+El precio de las acciones se modela mediante un árbol binomial tipo Cox--Ross--Rubinstein (CRR). Los factores de subida y bajada \(u_S\) y \(d_S\) se estiman a partir de la volatilidad histórica de los rendimientos logarítmicos de las acciones, tal como se establece en el modelo CRR estándar.
+
+En cada paso temporal, la probabilidad neutral al riesgo se ajusta dinámicamente según la tasa corta simulada, de manera que:
+\[
+q_t = \frac{e^{r_t \Delta t} - d_S}{u_S - d_S},
+\]
+donde \(r_t\) corresponde a la tasa corta simulada mediante el modelo de Ho--Lee.
+
+\subsection{Simulación de Monte Carlo}
+
+Para evaluar la distribución futura del valor del portafolio, se implementa un procedimiento de simulación de Monte Carlo con \(N = 10{,}000\) trayectorias independientes. Cada trayectoria consiste en:
+
+\begin{enumerate}
+  \item La simulación de una trayectoria mensual de tasas cortas utilizando el modelo de Ho--Lee.
+  \item La simulación simultánea del precio de la acción bajo el modelo CRR, empleando las tasas cortas simuladas para el cálculo de probabilidades neutrales al riesgo.
+  \item La valoración del portafolio en distintos horizontes temporales \(t \in \{0,\;2.5,\;5,\;10,\;15\}\) años.
+\end{enumerate}
+
+En cada horizonte, el valor del portafolio se calcula como la suma del valor de las acciones y el valor presente de los bonos (cero cupón y cuponados), descontando los flujos remanentes utilizando la tasa corta vigente en dicho horizonte.
+
+\subsection{Medidas de desempeño y riesgo}
+
+A partir de la distribución empírica obtenida mediante las simulaciones, se estiman las siguientes medidas para cada horizonte temporal:
+
+\begin{itemize}
+  \item Valor esperado numérico, calculado como la media muestral.
+  \item Valor en Riesgo (VaR) para niveles de confianza del 95\% y 30\%.
+  \item Valor en Riesgo Condicional (CVaR), definido como la esperanza condicional del valor del portafolio en las colas correspondientes de la distribución.
+\end{itemize}
+
+Estas medidas permiten caracterizar tanto el comportamiento esperado del portafolio como su exposición a escenarios adversos y favorables, proporcionando una base cuantitativa para el análisis de riesgo y la toma de decisiones.
 
 \section{Resultados}
 
-\subsection{Escenario esperado}
+En esta sección se presentan los resultados obtenidos a partir de la construcción de árboles binomiales, del árbol conjunto acción--tasa y de la simulación de trayectorias mediante Monte Carlo, de acuerdo con los procedimientos descritos en la metodología.
 
-\subsection{Escenario pesimista y optimista}
+\subsection{Árbol de precios de la acción}
 
-\subsection{Análisis}
+El árbol binomial de precios de la acción fue construido a partir de un precio inicial \(S_0 = 100\), con factores de subida \(u = 1.1\) y bajada \(d = 0.9\), para un horizonte de \(N = 3\) períodos. Los resultados muestran la evolución esperada del precio bajo combinaciones de movimientos al alza y a la baja.
+
+En particular, se observa que el precio máximo al final del horizonte corresponde a la trayectoria con subidas consecutivas, mientras que el valor mínimo se obtiene bajo descensos continuos. Esta estructura refleja correctamente el comportamiento multiplicativo del modelo binomial y sirve como base para la valoración conjunta con tasas de interés.
+
+\subsection{Árbol de tasa corta y factores de descuento}
+
+El árbol de tasa corta se construyó utilizando una tasa inicial \(r_0 = 0.05\), con factores de subida \(u_R = 1.2\) y bajada \(d_R = 0.8\), suponiendo capitalización continua. A partir de este árbol se derivaron los factores de descuento correspondientes a cada nodo y período.
+
+Los resultados muestran que los factores de descuento disminuyen conforme aumenta la tasa de interés y el horizonte temporal, lo cual es consistente con la teoría financiera. Este árbol permite capturar la incertidumbre asociada a la evolución futura de las tasas de interés y su impacto en la valoración de los instrumentos financieros.
+
+\subsection{Árbol binomial conjunto}
+
+A partir de los árboles individuales de la acción y la tasa corta, se construyó un árbol binomial conjunto que modela simultáneamente la evolución del precio accionario y de la tasa de interés. En cada período, existen cuatro posibles combinaciones de movimiento: subida o bajada de la acción combinada con subida o bajada de la tasa.
+
+Los nodos del árbol conjunto incluyen la probabilidad acumulada de cada trayectoria, lo cual permite caracterizar la distribución conjunta de los estados del sistema. La expansión del número de nodos conforme avanza el tiempo refleja el rápido crecimiento de los escenarios posibles, motivating the use of simulation techniques for horizon analysis.
+
+\subsection{Simulación de Monte Carlo del portafolio}
+
+Dado el crecimiento exponencial del número de nodos en el árbol conjunto, se implementó un procedimiento de simulación de Monte Carlo para generar trayectorias individuales del sistema. En cada simulación se genera una única trayectoria conjunta de la acción y la tasa, y se evalúa el valor del portafolio en horizontes predefinidos.
+
+Se realizaron \(10{,}000\) simulaciones independientes, obteniéndose para cada horizonte una distribución empírica del valor del portafolio. Estas distribuciones permiten estimar estadísticos de interés como el valor promedio, así como medidas de riesgo basadas en cuantiles.
+
+Los resultados evidencian que la combinación de modelos binomiales con simulación Monte Carlo permite evaluar adecuadamente la incertidumbre asociada al valor futuro del portafolio. El uso del árbol conjunto garantiza consistencia en la evolución simultánea de precios y tasas, mientras que la simulación reduce de manera significativa la complejidad computacional respecto a la enumeración completa de todos los nodos posibles.
+
+Esta sección de resultados sienta las bases para el análisis de medidas de riesgo y la comparación de estrategias de inversión, las cuales se desarrollan en las secciones posteriores del proyecto.
+
 
 \section{Estrategias de expansión accionaria}
 
@@ -391,4 +473,5 @@ Finalmente, se resumen las especificaciones t\'ecnicas que condicionan todo el a
 \section{Anexos}
 
 \end{document}
+
 
