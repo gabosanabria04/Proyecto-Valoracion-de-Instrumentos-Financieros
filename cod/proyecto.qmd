@@ -609,174 +609,238 @@ P_usd <- function(T) {
 ## Valor esperado teórico en t=0
 
 ```{r}
-
-#Bonos cero cupón (colones) 
-nom_cero_col <- 10000000
-T_cero_col   <- c(3, 7, 12, 15, 20)
-
-V0_ceros_col <- sum(nom_cero_col * sapply(T_cero_col, P_col))
-
-# Bonos cero cupón (dólares)
-nom_cero_usd <- 15000
-T_cero_usd   <- c(5, 10, 16)
-
-V0_ceros_usd <- sum(nom_cero_usd * sapply(T_cero_usd, P_usd))
-
-# ---- Acciones ----
-V0_acc_col  <- 500 * 24000
-V0_acc_usd  <- 300 * 120
+curva$vencimiento <- as.numeric(curva$vencimiento)
+curva$colones     <- as.numeric(curva$colones) / 100
+curva$dolares     <- as.numeric(curva$dolares) / 100
 
 ```
 
 ```{r}
-pv_bono_cupon_col <- function(nominal, tasa_anual, freq, T_total) {
-  tiempos <- seq(1/freq, T_total, by = 1/freq)
-  cupon   <- nominal * tasa_anual / freq
-  
-  sum(sapply(tiempos, function(t) {
-    T_cercano <- curva$vencimiento[which.min(abs(curva$vencimiento - t))]
-    cupon * P_col(T_cercano)
-  })) + nominal * P_col(T_total)
+P_col <- function(T) {
+  as.numeric(forward(0, 0, T, "colones"))
 }
 
-
-V0_cupon_col <- 
-  pv_bono_cupon_col(20000000, 0.03, 12, 10) +
-  pv_bono_cupon_col(20000000, 0.05, 4,  15) +
-  pv_bono_cupon_col(20000000, 0.08, 1,  17)
-
-
-```
-
-
-```{r}
-pv_bono_cupon_usd <- function(nominal, tasa_anual, freq, T_total) {
-  tiempos <- seq(1/freq, T_total, by = 1/freq)
-  cupon   <- nominal * tasa_anual / freq
-  
-  sum(sapply(tiempos, function(t) {
-    T_cercano <- curva$vencimiento[which.min(abs(curva$vencimiento - t))]
-    cupon * P_usd(T_cercano)
-  })) + nominal * P_usd(T_total)
+P_usd <- function(T) {
+  as.numeric(forward(0, 0, T, "dolares"))
 }
 
-V0_cupon_usd <- pv_bono_cupon_usd(20000, 0.07, 2, 15)
-
 ```
 
+
+
 ```{r}
-V0_col <- V0_ceros_col + V0_cupon_col + V0_acc_col
-V0_usd <- V0_ceros_usd + V0_cupon_usd + V0_acc_usd
 
-E0 <- 540  # poné el que estén usando
 
-V0_total <- V0_col + V0_usd * E0
+#-----------------------------
+# 1. Bonos cero cupón
+#-----------------------------
+
+# Colones: 5 bonos de ¢10.000.000 a 3, 7, 12, 15 y 20 años
+V0_ceros_col <- sum(
+  10000000 * P_col(c(3, 7, 12, 15, 20))
+)
+
+# Dólares: 3 bonos de $15.000 a 5, 10 y 16 años
+V0_ceros_usd <- sum(
+  15000 * P_usd(c(5, 10, 16))
+)
+
+#-----------------------------
+# 2. Bonos cuponados
+#-----------------------------
+
+# Función genérica para bono cuponado en colones
+precio_bono_col <- function(tasa, freq, T, nominal) {
+  dt       <- 1 / freq
+  tiempos  <- seq(dt, T, by = dt)
+  cupon    <- nominal * tasa / freq
+  
+  # Esto ahora es: numeric * numeric
+  sum(cupon * sapply(tiempos, P_col)) + nominal * P_col(T)
+}
+
+V0_cupon_col <-
+  precio_bono_col(0.03, 12, 10, 20000000) +
+  precio_bono_col(0.05,  4, 15, 20000000) +
+  precio_bono_col(0.08,  1, 17, 20000000)
+
+
+# Bono cuponado en dólares: 7% bianual, 15 años, nominal 20.000
+precio_bono_usd <- function(tasa, freq, T, nominal) {
+  dt       <- 1 / freq
+  tiempos  <- seq(dt, T, by = dt)
+  cupon    <- nominal * tasa / freq
+  sum(cupon * sapply(tiempos, P_usd)) + nominal * P_usd(T)
+}
+
+V0_cupon_usd <- precio_bono_usd(0.07, 2, 15, 20000)
+
+#-----------------------------
+# 3. Acciones
+#-----------------------------
+
+V0_acc_col <- 500 * 24000    # 500 acciones a ¢24.000
+V0_acc_usd <- 300 * 120      # 300 acciones a $120
+
+#-----------------------------
+# 4. Valor total por moneda
+#-----------------------------
+
+V0_colones <- V0_ceros_col + V0_cupon_col + V0_acc_col
+V0_usd     <- V0_ceros_usd + V0_cupon_usd + V0_acc_usd
+
+#-----------------------------
+# 5. Total en colones (tipo de cambio de no arbitraje)
+#-----------------------------
+
+E0 <- 540   # aquí pones el tipo de cambio que estén usando en el proyecto
+
+V0_total_colones <- V0_colones + V0_usd * E0
+
+#-----------------------------
+# 6. Tabla final
+#-----------------------------
 
 data.frame(
-  Moneda = c("Colones", "Dólares", "Total en colones"),
-  Valor  = c(V0_col, V0_usd, V0_total)
+  Concepto = c("Valor en colones", "Valor en dólares", "Total en colones"),
+  Valor    = c(V0_colones, V0_usd, V0_total_colones)
 )
 
 ```
+
 
 
 ## Simulación de Montercarlo 
 
 ```{r}
-
 set.seed(123)
 
-S0 <- 100
-r0 <- 0.05
-uS <- 1.1; dS <- 0.9
-uR <- 1.1; dR <- 0.9
-qR <- 0.5
-dt <- 0.5
+
+
+n_meses <- 15 * 12       # 15 años, pasos mensuales
+dt      <- 1/12
+
+u2_col <- 1.0001
+d2_col <- 0.9999
+
+S0_col <- 24000          # precio actual de la acción nacional
+n_acc_col <- 500         # cantidad de acciones en colones
+
+# Datos 
+nom_cero_col <- 10000000
+T_cero_col   <- c(3, 7, 12, 15, 20)
+
+nom_cup_col  <- 20000000
+tasa_cup_col <- c(0.03, 0.05, 0.08)
+freq_cup_col <- c(12,      4,     1)   # mensual, trimestral, anual
+T_cup_col    <- c(10,     15,    17)
+
+
+
+simular_camino_col <- function(n_meses, u2, d2, moneda, uS, dS, S0) {
+  # Trayectoria de tasas con Ho-Lee 
+  res_rate <- ho_lee(u2, d2, n_meses, moneda)
+  r_t <- res_rate$r_t         # longitud n_meses + 1 (incluye t=0)
+  
+  # Trayectoria de la acción con CRR
+  S <- numeric(n_meses + 1)
+  S[1] <- S0
+  
+  for (i in 1:n_meses) {
+
+    q_i <- (exp(r_t[i] * dt) - dS) / (uS - dS)
+    q_i <- max(min(q_i, 1), 0)  
+    
+    up <- rbinom(1, 1, q_i)
+    S[i + 1] <- if (up == 1) S[i] * uS else S[i] * dS
+  }
+  
+  data.frame(
+    paso = 0:n_meses,
+    t    = (0:n_meses) * dt,
+    r_t  = r_t,
+    S    = S
+  )
+}
+
+
+
+valor_portafolio_col <- function(camino, t_h) {
+  # t_h en años
+  paso_h <- round(t_h / dt)   # índice del paso correspondiente
+  r_h    <- camino$r_t[paso_h + 1]
+  
+  # Acciones
+  V_acc <- n_acc_col * camino$S[paso_h + 1]
+  
+  #Bonos cero cupón
+  V_cero <- 0
+  for (T in T_cero_col) {
+    if (T <= t_h) {
+
+      V_cero <- V_cero + nom_cero_col
+    } else {
+
+      V_cero <- V_cero + nom_cero_col * exp(-r_h * (T - t_h))
+    }
+  }
+  
+
+  V_cupon <- 0
+  for (j in seq_along(T_cup_col)) {
+    Tj    <- T_cup_col[j]
+    tasaj <- tasa_cup_col[j]
+    freqj <- freq_cup_col[j]
+    
+    dtj      <- 1 / freqj
+    tiempos  <- seq(dtj, Tj, by = dtj)
+    cuponj   <- nom_cup_col * tasaj / freqj
+    
+
+    for (tj in tiempos) {
+      if (tj <= t_h) {
+
+      } else {
+        V_cupon <- V_cupon + cuponj * exp(-r_h * (tj - t_h))
+      }
+    }
+    
+
+    if (Tj > t_h) {
+      V_cupon <- V_cupon + nom_cup_col * exp(-r_h * (Tj - t_h))
+    } else {
+      V_cupon <- V_cupon + nom_cup_col
+    }
+  }
+  
+  # Valor total en colones
+  V_acc + V_cero + V_cupon
+}
+
+
+# Monte Carlo
+
+
+nsim      <- 10000
 horizontes <- c(0, 2.5, 5, 10, 15)
 
-valor_portafolio <- function(S, r, t) {
-  50 * S + 1000 * exp(-r * (15 - t))
-}
+resultados_mc_col <- matrix(NA_real_, nrow = nsim, ncol = length(horizontes))
+colnames(resultados_mc_col) <- paste0("t_", horizontes)
 
-res_df <- simular_portafolio_df(
-  n_sim = 10000,   # Monte Carlo 
-  S0, r0,
-  uS, dS,
-  uR, dR,
-  qR,
-  dt,
-  horizontes,
-  valor_portafolio
-)
-
-head(res_df)
-
-
-```
-
-```{r}
-resumen_mc <- apply(res_df[ , -1],  
-                    2,
-                    function(x) {
-                      c(
-                        media = mean(x),
-                        sd    = sd(x),
-                        p5    = quantile(x, 0.05),
-                        p50   = quantile(x, 0.50),
-                        p95   = quantile(x, 0.95)
-                      )
-                    })
-
-resumen_mc
-
-```
-```{r}
-res_df
-
-```
-
-```{r}
-VaR <- function(x, p) {
-  quantile(x, probs = p, na.rm = TRUE)
-}
-
-CVaR <- function(x, p, type = "lower") {
-  v <- quantile(x, probs = p, na.rm = TRUE)
+for (sim in 1:nsim) {
+  camino <- simular_camino_col(n_meses, u2_col, d2_col, "colones", uS, dS, S0_col)
   
-  if (type == "lower") {
-    mean(x[x <= v], na.rm = TRUE)
-  } else {
-    mean(x[x >= v], na.rm = TRUE)
+  for (j in seq_along(horizontes)) {
+    resultados_mc_col[sim, j] <- valor_portafolio_col(camino, horizontes[j])
   }
 }
 
-```
-
-```{r}
-horizontes <- c("t_0", "t_2.5", "t_5", "t_10", "t_15")
-
-resultados_riesgo <- lapply(horizontes, function(h) {
-  
-  x <- res_df[[h]]
-  
-  data.frame(
-    Horizonte = h,
-    
-    # Escenario esperado
-    Media = mean(x),
-    
-    # Escenario pesimista (95%)
-    VaR_95  = VaR(x, 0.05),
-    CVaR_95 = CVaR(x, 0.05, type = "lower"),
-    
-    # Escenario optimista (30%)
-    VaR_30  = VaR(x, 0.70),
-    CVaR_30 = CVaR(x, 0.70, type = "upper")
-  )
-})
-
-tabla_riesgo <- do.call(rbind, resultados_riesgo)
-tabla_riesgo
+resultados_mc_col <- as.data.frame(resultados_mc_col)
+head(resultados_mc_col)
 
 ```
+
+
+
+
 
