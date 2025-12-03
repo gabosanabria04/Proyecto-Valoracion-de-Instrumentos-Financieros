@@ -483,74 +483,40 @@ otros_precios <- function(u_2, d_2, n, moneda, omegas){
 ## Árbol Conjunto
 ```{r}
 conjunto <- function(u_2, d_2, n, moneda, omegas, uS, dS, accion){
-  res <- ho_lee(u_2, d_2, n, moneda, omegas)
-  r <- res$r_t
+  r <- ho_lee(u_2, d_2, n, moneda)$r_t
   print(r)
   k <- d_2/u_2
   q <- (1-d_2)/(u_2 - d_2)
   resultados <- data.frame(periodo = 1:(n+1),
                            S  = rep(NA_real_, n+1),
                            proba_S = rep(NA_real_, n+1),
-                           U_t  = res$U_t)
+                           U_t  = rep(NA_real_, n+1))
   resultados$S[1] <- accion
   # Separamos la primera iteración
-  q_i <- ifelse(exp(r[1]) > uS, (exp(log(uS)) - dS)/(uS - dS), ifelse(exp(r[1]) < dS, (exp(log(dS)) - dS)/(uS - dS), (exp(r[1]) - dS)/(uS - dS)))
-  print(q_i)
-  print(q)
-  bern <- rbinom(n = 1, size = 1, prob = q_i)
+  q <- ifelse(exp(r[1]) > uS, (exp(log(uS)) - dS)/(uS - dS), ifelse(exp(r[1]) < dS, (exp(log(dS)) - dS)/(uS - dS), (exp(r[1]) - dS)/(uS - dS)))
+  bern <- rbinom(n = 1, size = 1, prob = q)
   if(bern == 1){
     resultados$S[2] <- resultados$S[1]*uS
-    resultados$proba_S[2] <- q_i
+    resultados$proba_S[2] <- q
   }
   else{
     resultados$S[2] <- resultados$S[1]*dS
-    resultados$proba_S[2] <- 1 - q_i
+    resultados$proba_S[2] <- 1 - q
   }
   for (i in 2:n){
     q_i <- ifelse(exp(r[i]) > uS, (exp(log(uS)) - dS)/(uS - dS), ifelse(exp(r[i]) < dS, (exp(log(dS)) - dS)/(uS - dS), (exp(r[i]) - dS)/(uS - dS)))
-    print(q_i)
     bern <- rbinom(n = 1, size = 1, prob = q_i)
     print(bern)
     if(bern == 1){
       resultados$S[i + 1] <- resultados$S[i]*uS
-      if(omegas[i - 1] == 1){
-        resultados$proba_S[i + 1] <- resultados$proba_S[i]*q_i*q
-      }
-      else{
-        resultados$proba_S[i + 1] <- resultados$proba_S[i]*q_i*(1 - q)
-      }
-      
+      resultados$proba_S[i + 1] <- q_i
     }
     else{
       resultados$S[i + 1] <- resultados$S[i]*dS
-      if(omegas[i - 1] == 1){
-        resultados$proba_S[i + 1] <- resultados$proba_S[i]*(1 - q_i)*q
-      }
-      else{
-        resultados$proba_S[i + 1] <- resultados$proba_S[i]*(1 - q_i)*(1 - q)
-      }
-      
+      resultados$proba_S[i + 1] <- 1 - q_i
     }
   }
   return(resultados)
-}
-```
-## Opción Europea: simulación
-```{r}
-# contrato: precio del contrato, pagado en el momento 0
-# K: precio de ejercicio del contrato
-# nsim: número de simulaciones
-# omega_sim: lista de omegas
-# cant: cantidad de acciones
-europea <- function(u_2, d_2, n, moneda, omega_sim, uS, dS, accion, contrato, K, nsim, cant){
-  sim_S <- data.frame(aporte = rep(NA_real_, nsim))
-
-  for(i in 1:nsim){
-    omegas <- omega_sim[[i]]
-    camino <- conjunto(u_2, d_2, n, moneda, omegas, uS, dS, accion)
-    sim_S$aporte[i] <- cant*(max(camino$S[n + 1] - K, 0)-exp(sum(camino$r_t))*contrato)
-  }
-  return(sim_S)
 }
 ```
 
@@ -588,17 +554,16 @@ dS <- exp(-sigma)
 dS
 ```
 
-
+# 2.a) Compra directa de 200 acciones de Nacional de Energía en T = 15
 ```{r}
-curva$colones <- curva$colones / 100
-curva$dolares <- curva$dolares / 100
+S0_ne <- 24000
+u2_col <- 1.0001
+d2_col <- 0.9999
 
-# --- Factores de descuento ---
-P_col <- function(T) {
-  r <- curva$colones[curva$vencimiento == T]
-  (1 + r)^(-T)
-}
+# Probabilidad neutral al riesgo
+q_col <- (1 - d2_col) / (u2_col - d2_col)
 
+<<<<<<< HEAD
 P_usd <- function(T) {
   r <- curva$dolares[curva$vencimiento == T]
   (1 + r)^(-T)
@@ -713,8 +678,13 @@ data.frame(
 ## Simulación de Montercarlo 
 
 ```{r}
-set.seed(123)
 
+n_pasos_ <- 15 * 12   
+
+set.seed(123)
+n_sims <- 10000
+
+<<<<<<< HEAD
 
 
 n_meses <- 15 * 12       # 15 años, pasos mensuales
@@ -837,10 +807,95 @@ for (sim in 1:nsim) {
 
 resultados_mc_col <- as.data.frame(resultados_mc_col)
 head(resultados_mc_col)
+=======
+# Vector para guardar el precio de la acción en T = 15
+
+S15_ne <- numeric(n_sims)
+
+for (i in 1:n_sims) {
+
+# Omegas para la tasa en colones
+
+omegas_i <- rbinom(n = n_pasos_2a, size = 1, prob = q_col)
+
+# Camino conjunto tasa–acción en colones
+
+camino_i <- conjunto(
+u_2    = u2_col,
+d_2    = d2_col,
+n      = n_pasos_2a,
+moneda = "colones",
+omegas = omegas_i,
+uS     = uS,      # factores de subida/bajada de la acción
+dS     = dS,
+accion = S0_ne
+)
+
+S15_ne[i] <- camino_i$S[nrow(camino_i)]
+}
+
+aporte_directa <- 200 * S15_ne
+
+# Resumen estadístico del aporte de la estrategia
+
+resumen <- c(
+media = mean(aporte_directa),
+sd    = sd(aporte_directa)
+)
+
+resumen
 
 ```
 
+# 2.d) Compra de una opción call europea 
+```{r}
+S0_ne  <- 24000          
+u2_col <- 1.0001
+d2_col <- 0.9999
+q_col <- (1 - d2_col) / (u2_col - d2_col)
+n_pasos_2d <- 15 * 12    
+Kf_ne <- S0_ne * exp(15 * 12 * 0.0035)
+K_call_eur <- Kf_ne - 5000
+set.seed(123)
+n_sim_2d <- 10000
 
+# Vector para guardar S_15 
+ST_2d <- numeric(n_sim_2d)
+
+for (i in 1:n_sim_2d) {
+  omegas_i <- rbinom(n = n_pasos_2d, size = 1, prob = q_col)
+    camino_i <- conjunto(
+    u_2    = u2_col,
+    d_2    = d2_col,
+    n      = n_pasos_2d,
+    moneda = "colones",
+    omegas = omegas_i,
+    uS     = uS,      
+    dS     = dS,
+    accion = S0_ne
+  )
+  
+  # Precio de la acción en T = 15 
+  ST_2d[i] <- camino_i$S[nrow(camino_i)]
+}
+
+# Payoff 
+payoff_call_1 <- pmax(ST_2d - K_call_eur, 0)
+
+n_calls <- 200
+
+aporte_call_2d <- n_calls * payoff_call_1
+
+# Resumen estadístico del aporte de la estrategia 2.d en T = 15
+resumen_2d <- c(
+  media = mean(aporte_call_2d),
+  sd    = sd(aporte_call_2d)
+)
+
+resumen_2d
+
+
+```
 
 
 
