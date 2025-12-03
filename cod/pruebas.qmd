@@ -69,7 +69,8 @@ ho_lee <- function(u_2, d_2, n, moneda, bern){
 ```{r}
 u_2 <- 1.0001
 d_2 <- 0.9999
-ho_lee(u_2, d_2, 12, 'colones')
+omegas <- rbinom(n = 12, size = 1, prob = (1-d_2)/(u_2 - d_2))
+ho_lee(u_2, d_2, 12, 'colones', omegas)
 -log(forward(0, 0, 1/12, 'colones'))
 ```
 
@@ -170,12 +171,12 @@ precios_arriba(u_2, d_2, 12, 'colones')
 conjunto <- function(u_2, d_2, n, moneda, omegas, uS, dS, accion){
   res <- ho_lee(u_2, d_2, n, moneda, omegas)
   r <- res$r_t
-  print(r)
   k <- d_2/u_2
   q <- (1-d_2)/(u_2 - d_2)
   resultados <- data.frame(periodo = 1:(n+1),
                            S  = rep(NA_real_, n+1),
                            proba_S = rep(NA_real_, n+1),
+                           r_t = r,
                            U_t  = res$U_t)
   resultados$S[1] <- accion
   # Separamos la primera iteración
@@ -229,48 +230,156 @@ conjunto(u_2, d_2, 12, 'colones', omegas, uS, dS, 200)
 
 
 ```{r}
-valor_teorico_accion <- function(Ts, S0, moneda) {
-  sapply(Ts, function(T) {
-    if (T == 0) {
-      return(S0)
-    }
-    P_0T <- forward(0, 0, T, moneda) 
-    S0 / P_0T                         
-  })
-}
-
-Ts <- c(0, 2.5, 5, 10, 15)
-S0 <- 24000  # tu 'accion'
-valor_teorico_accion(Ts, S0, "colones")
+# valor_teorico_accion <- function(Ts, S0, moneda) {
+#   sapply(Ts, function(T) {
+#     if (T == 0) {
+#       return(S0)
+#     }
+#     P_0T <- forward(0, 0, T, moneda) 
+#     S0 / P_0T                         
+#   })
+# }
+# 
+# Ts <- c(0, 2.5, 5, 10, 15)
+# S0 <- 24000  # tu 'accion'
+# valor_teorico_accion(Ts, S0, "colones")
 
 ```
 # Simulación de acciones
 ```{r}
-uS <- 1.003618
-dS <- 0.9963954
+# uS <- 1.003618
+# dS <- 0.9963954
+# omega <- rbinom(n = 180, size = 1, prob = (1-d_2)/(u_2 - d_2))
+# # Parámetros
+# n    <- 180
+# Ts   <- c(0, 2.5, 5, 10, 15)       # años
+# idx  <- Ts * 12 + 1                # índices de las filas en S
+# nsim <- 10
+# 
+# accion <- 24000                      
+# moneda <- "colones"               
+# 
+# sim_S <- matrix(NA_real_, nrow = nsim, ncol = length(Ts))
+# colnames(sim_S) <- paste0("t_", Ts)
+# 
+# for(sim in 1:nsim){
+#   omegas <- omega[sim]
+#   camino <- conjunto(u_2, d_2, n, moneda, omegas, uS, dS, accion)
+#   sim_S[sim, ] <- camino$S[idx]
+# }
+# 
+# # Valor esperado numérico (promedio de las 10 simulaciones)
+# E_S <- colMeans(sim_S)
+# 
+# E_S     # valor esperado aproximado en 0, 2.5, 5, 10 y 15 años
 
-# Parámetros
-n    <- 180
-Ts   <- c(0, 2.5, 5, 10, 15)       # años
-idx  <- Ts * 12 + 1                # índices de las filas en S
-nsim <- 10
+```
 
-accion <- 24000                      
-moneda <- "colones"               
 
-sim_S <- matrix(NA_real_, nrow = nsim, ncol = length(Ts))
-colnames(sim_S) <- paste0("t_", Ts)
 
-for(sim in 1:nsim){
-  omegas <- rbinom(n = n, size = 1, prob = (1-d_2)/(u_2 - d_2))
-  camino <- conjunto(u_2, d_2, n, moneda, omegas, uS, dS, accion)
-  sim_S[sim, ] <- camino$S[idx]
+
+
+
+# Opción call europea
+```{r}
+omega_sim <- replicate(
+  10,
+  rbinom(n = 180, size = 1, prob = 0.5),
+  simplify = FALSE
+)
+omega_sim[[1]]
+# contrato: precio del contrato, pagado en el momento 0
+# K: precio de ejercicio del contrato
+# nsim: número de simulaciones
+# omega_sim: lista de omegas
+# cant: cantidad de acciones
+europea <- function(u_2, d_2, n, moneda, omega_sim, uS, dS, accion, contrato, K, nsim, cant){
+  sim_S <- data.frame(aporte = rep(NA_real_, nsim))
+
+  for(i in 1:nsim){
+    omegas <- omega_sim[[i]]
+    camino <- conjunto(u_2, d_2, n, moneda, omegas, uS, dS, accion)
+    sim_S$aporte[i] <- cant*(max(camino$S[n + 1] - K, 0)-exp(sum(camino$r_t))*contrato)
+  }
+  return(sim_S)
+}
+```
+
+```{r}
+europea(u_2, d_2, 180, 'colones', omega_sim, uS, dS, 24000, 70000, 70000, 10, 200)
+```
+
+
+# Opción Americana
+```{r}
+conjunto <- function(u_2, d_2, n, moneda, omegas, uS, dS, accion){
+  res <- ho_lee(u_2, d_2, n, moneda, omegas)
+  r <- res$r_t
+  k <- d_2/u_2
+  q <- (1-d_2)/(u_2 - d_2)
+  resultados <- data.frame(periodo = 1:(n+1),
+                           S  = rep(NA_real_, n+1),
+                           proba_S = rep(NA_real_, n+1),
+                           r_t = r,
+                           U_t  = res$U_t)
+  resultados$S[1] <- accion
+  # Separamos la primera iteración
+  q_i <- ifelse(exp(r[1]) > uS, (exp(log(uS)) - dS)/(uS - dS), ifelse(exp(r[1]) < dS, (exp(log(dS)) - dS)/(uS - dS), (exp(r[1]) - dS)/(uS - dS)))
+  bern <- rbinom(n = 1, size = 1, prob = q_i)
+  if(bern == 1){
+    resultados$S[2] <- resultados$S[1]*uS
+    resultados$proba_S[2] <- q_i
+  }
+  else{
+    resultados$S[2] <- resultados$S[1]*dS
+    resultados$proba_S[2] <- 1 - q_i
+  }
+  for (i in 2:n){
+    q_i <- ifelse(exp(r[i]) > uS, (exp(log(uS)) - dS)/(uS - dS), ifelse(exp(r[i]) < dS, (exp(log(dS)) - dS)/(uS - dS), (exp(r[i]) - dS)/(uS - dS)))
+    bern <- rbinom(n = 1, size = 1, prob = q_i)
+    if(bern == 1){
+      resultados$S[i + 1] <- resultados$S[i]*uS
+      if(omegas[i - 1] == 1){
+        resultados$proba_S[i + 1] <- resultados$proba_S[i]*q_i*q
+      }
+      else{
+        resultados$proba_S[i + 1] <- resultados$proba_S[i]*q_i*(1 - q)
+      }
+      
+    }
+    else{
+      resultados$S[i + 1] <- resultados$S[i]*dS
+      if(omegas[i - 1] == 1){
+        resultados$proba_S[i + 1] <- resultados$proba_S[i]*(1 - q_i)*q
+      }
+      else{
+        resultados$proba_S[i + 1] <- resultados$proba_S[i]*(1 - q_i)*(1 - q)
+      }
+      
+    }
+  }
+  return(resultados)
+}
+```
+
+```{r}
+todas_omegas <- function(n) {
+  # Lista de n copias de c(0, 1)
+  lista_bits <- rep(list(0:1), n)
+  
+  # Todas las combinaciones posibles
+  omegas_df <- expand.grid(lista_bits)
+  
+  omegas_df <- omegas_df[order(as.numeric(sub("Var", "", names(omegas_df))))]
+  
+  # Convertir a matriz para que sea más fácil de usar
+  as.matrix(omegas_df)
 }
 
-# Valor esperado numérico (promedio de las 10 simulaciones)
-E_S <- colMeans(sim_S)
+omegas_mat <- todas_omegas(15)
+omega_sim <- lapply(seq_len(nrow(omegas_mat)), function(i) omegas_mat[i, ])
 
-E_S     # valor esperado aproximado en 0, 2.5, 5, 10 y 15 años
 
+europea(u_2, d_2, 15, 'colones', omega_sim, uS, dS, 24000, 70000, 70000, 2^15, 200)
 ```
 
