@@ -679,6 +679,9 @@ data.frame(
 
 ```
 
+
+## Simulación de Montercarlo 
+
 ```{r}
 
 set.seed(123)
