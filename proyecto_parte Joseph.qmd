@@ -1,0 +1,509 @@
+---
+title: "Evaluación Actuarial - Smart Investments S.A."
+author:
+- Paola Espinoza Hernández
+
+- Gabriel Sanabria Alvarado
+
+- Joseph Romero Chinchilla
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: yes
+    number_sections: yes
+  html_document:
+    toc: yes
+    df_print: paged
+---
+```{r, warning=FALSE}
+library(dplyr)
+```
+
+```{r cargar curva cero cupón}
+
+curva <- read.csv("../data/Curva_0C.csv", sep = ";", col.names = c("vencimiento", "colones", "dolares"), dec = ",")
+
+```
+
+
+## Precios Forward
+
+```{r, echo = FALSE}
+
+set.seed(123) 
+
+```
+
+
+
+```{r, calcular precio forward}
+
+forward <- function(t, S, T, moneda){
+
+  if(t == 0){ #versión normal
+
+    idS <- which.min(abs(curva$vencimiento - S))
+
+    idT <- which.min(abs(curva$vencimiento - T))
+
+    rhoS <- curva[[moneda]][idS]/100
+
+    rhoT <- curva[[moneda]][idT]/100
+
+    PS <- ((1+rhoS)^-S)
+
+    PT <- ((1+rhoT)^-T)
+
+    return(PT/PS)
+
+  }
+
+}
+
+```
+
+
+
+## Tasas cortas
+
+```{r}
+
+# Función para generar árbol de tasas de interés
+
+# Recibe u(2), d(2), número de iteraciones
+
+
+ho_lee <- function(u_2, d_2, n, moneda, bern){
+
+  k <- d_2/u_2
+
+  q <- (1-d_2)/(u_2 - d_2)
+
+  r_0 <- -log(forward(0, 0, 1/12, moneda))
+
+  U <- 0
+
+  S <- 0
+
+  # Seguir un camino
+
+
+  resultados <- data.frame(periodo = 1:(n+1),
+
+                           r_t  = rep(NA_real_, n+1),
+
+                           U_t  = rep(NA_real_, n+1),
+
+                           d = rep(NA_real_, n + 1))
+
+  resultados$r_t[1] <- r_0
+
+  resultados$U_t[1] <- 0
+
+  # Excluimos el caso para d(2)
+
+  S <- S + 1/12 #incrementos mensuales
+
+  if(bern[1] == 1){
+
+    U <- U + 1
+
+  }
+
+  resultados$U_t[1+1] <- U
+
+  d <- d_2
+
+  resultados$d[2] <- d
+
+  r_t <- -log(forward(0, S, S+1/12, moneda)) - log(d) + U*log(k)
+
+  resultados$r_t[1+1] <- r_t
+
+  for(i in 2:n){
+
+    S <- S + 1/12 #incrementos mensuales
+
+    if(bern[i] == 1){
+
+      U <- U + 1
+
+    }
+
+    resultados$U_t[i+1] <- U
+
+    d <- k^(i-1)/((1-q)*k^(i-1) + q)
+
+    resultados$d[i+1] <- d
+
+    r_t <- -log(forward(0, S, S+1/12, moneda)) - log(d) + U*log(k)
+
+    resultados$r_t[i+1] <- r_t
+
+  }
+
+  return(resultados)
+
+}
+
+```
+
+
+
+## Precios
+
+```{r}
+
+precios_arriba <- function(u_2, d_2, n, moneda){
+
+  k <- d_2/u_2
+
+  q <- (1-d_2)/(u_2 - d_2)
+
+  resultados <- data.frame(periodo = 0:n,
+
+                           precio  = rep(NA_real_, n+1),
+
+                           U_t  = 0:n)
+
+  # Se construye la rama de arriba
+
+  u <- function(t){
+
+    u <- 1/((1-q)*k^(t) + q)
+
+  }
+
+  # Separamos las primeras tres
+
+  resultados$precio[1] <- forward(0, 0, n/12, moneda) #Precio actual
+
+  resultados$precio[2] <- u(n)*forward(0, 1/12, n/12, moneda) #Primer salto
+
+  resultados$precio[3] <- u(n - 1)*resultados$precio[2]/(u_2*forward(0, 1/12, 2/12, moneda)) #Segundo salto
+
+  i <- 3
+
+  while(n - i > 1){
+
+    t <- i/12
+
+    resultados$precio[i + 1] <- u(n - i + 1)*resultados$precio[i]/(u(i)*forward(0, t - 1/12, t, moneda))
+
+    i <- i + 1
+
+  }
+
+  resultados$precio[n] <- u_2*resultados$precio[n - 1]/(u(n - 1)*forward(0, n - 2/12, n - 1/12, moneda))
+
+  resultados$precio[n + 1] <- 1
+
+  return(resultados)
+
+}
+
+```
+
+
+
+```{r}
+
+otros_precios <- function(u_2, d_2, n, moneda, omegas){
+
+  sup <- precios_arriba(u_2, d_2, n, moneda)
+
+  k <- d_2/u_2
+
+  q <- (1-d_2)/(u_2 - d_2)
+
+  resultados <- data.frame(periodo = 1:(n+1),
+
+                           precio  = sup$precio, #primero y último son iguales
+
+                           U_t  = rep(NA_real_, n+1))
+
+  resultados$U_t[1] <- 0
+
+  for(i in 2:n){
+
+    resultados$U_t[i] <- resultados$U_t[i - 1] + omegas[i - 1]
+
+    resultados$precio[i] <- k^((i - 1 - resultados$U_t[i])*(n - i + 1))*sup$precio[i] #Multiplicar factor la cantidad de veces necesaria
+
+  }
+
+  return(resultados)
+
+}
+
+```
+
+
+
+
+
+## Árbol Conjunto
+
+```{r}
+
+conjunto <- function(u_2, d_2, n, moneda, omegas, uS, dS, accion){
+
+
+  res <- ho_lee(u_2, d_2, n, moneda, omegas)
+
+
+  r <- res$r_t
+
+  k <- d_2/u_2
+
+  q <- (1-d_2)/(u_2 - d_2)
+
+  resultados <- data.frame(periodo = 1:(n+1),
+
+                           S  = rep(NA_real_, n+1),
+
+                           proba_S = rep(NA_real_, n+1),
+
+
+                           r_t = r,
+
+
+                           U_t  = res$U_t)
+
+  resultados$S[1] <- accion
+
+  # Separamos la primera iteración
+
+
+  q_i <- ifelse(exp(r[1]) > uS, (exp(log(uS)) - dS)/(uS - dS), ifelse(exp(r[1]) < dS, (exp(log(dS)) - dS)/(uS - dS), (exp(r[1]) - dS)/(uS - dS)))
+
+
+  bern <- rbinom(n = 1, size = 1, prob = q_i)
+
+  if(bern == 1){
+
+    resultados$S[2] <- resultados$S[1]*uS
+
+
+    resultados$proba_S[2] <- q_i
+
+  }
+
+  else{
+
+    resultados$S[2] <- resultados$S[1]*dS
+
+
+    resultados$proba_S[2] <- 1 - q_i
+
+  }
+
+  for (i in 2:n){
+
+    q_i <- ifelse(exp(r[i]) > uS, (exp(log(uS)) - dS)/(uS - dS), ifelse(exp(r[i]) < dS, (exp(log(dS)) - dS)/(uS - dS), (exp(r[i]) - dS)/(uS - dS)))
+
+    bern <- rbinom(n = 1, size = 1, prob = q_i)
+
+
+    if(bern == 1){
+
+      resultados$S[i + 1] <- resultados$S[i]*uS
+
+
+      if(omegas[i - 1] == 1){
+
+
+        resultados$proba_S[i + 1] <- resultados$proba_S[i]*q_i*q
+
+
+      }
+
+
+      else{
+
+
+        resultados$proba_S[i + 1] <- resultados$proba_S[i]*q_i*(1 - q)
+
+
+      }
+
+
+      
+
+    }
+
+    else{
+
+      resultados$S[i + 1] <- resultados$S[i]*dS
+
+
+      if(omegas[i - 1] == 1){
+
+
+        resultados$proba_S[i + 1] <- resultados$proba_S[i]*(1 - q_i)*q
+
+
+      }
+
+
+      else{
+
+
+        resultados$proba_S[i + 1] <- resultados$proba_S[i]*(1 - q_i)*(1 - q)
+
+
+      }
+
+
+      
+
+    }
+
+  }
+
+  return(resultados)
+
+}
+
+```
+
+## Opción Europea: simulación
+```{r}
+# contrato: precio del contrato, pagado en el momento 0
+# K: precio de ejercicio del contrato
+# nsim: número de simulaciones
+# omega_sim: lista de omegas
+# cant: cantidad de acciones
+europea <- function(u_2, d_2, n, moneda, omega_sim, uS, dS, accion, contrato, K, nsim, cant){
+  sim_S <- data.frame(aporte = rep(NA_real_, nsim))
+
+  for(i in 1:nsim){
+    omegas <- omega_sim[[i]]
+    camino <- conjunto(u_2, d_2, n, moneda, omegas, uS, dS, accion)
+    sim_S$aporte[i] <- cant*(max(camino$S[n + 1] - K, 0)-exp(sum(camino$r_t))*contrato)
+  }
+  return(sim_S)
+}
+```
+
+
+
+# Seccion II 
+```{r}
+# Parámetros comunes sección II
+S0_ne  <- 24000
+u2_col <- 1.0001
+d2_col <- 0.9999
+q_col  <- (1 - d2_col) / (u2_col - d2_col)
+
+n_pasos <- 15 * 12
+n_sims  <- 10000
+set.seed(123)
+
+omega_sim_col <- replicate(
+  n_sims,
+  rbinom(n = n_pasos, size = 1, prob = q_col),
+  simplify = FALSE
+)
+
+```
+
+
+```{r}
+S_nac_II <- readxl::read_excel("../data/precio_acciones_nacionales.xlsx")
+```
+
+
+
+```{r, warning=FALSE}
+S_nac_II <- S_nac_II %>% arrange(Fecha)
+S_nac_II <- S_nac_II %>%
+  mutate(ret_log = log(Precio / lag(Precio)))
+sigma2 <- var(S_nac_II$ret_log, na.rm = TRUE)
+
+
+
+sigma <-sqrt(sigma2)
+
+```
+
+
+```{r}
+
+uS <- exp(sigma)
+
+uS
+
+dS <- exp(-sigma)
+
+dS
+
+```
+## 2.a) Compra directa de 200 acciones de Nacional de Energía en T = 15
+
+```{r}
+
+S15_ne <- numeric(n_sims)
+
+for (i in 1:n_sims) {
+  camino_i <- conjunto(
+    u_2    = u2_col,
+    d_2    = d2_col,
+    n      = n_pasos,
+    moneda = "colones",
+    omegas = omega_sim_col[[i]],  
+    uS     = uS,                  # uS y dS vienen del CRR
+    dS     = dS,
+    accion = S0_ne
+  )
+  
+  S15_ne[i] <- camino_i$S[nrow(camino_i)]
+}
+
+aporte_directa <- 200 * S15_ne
+
+resumen_2a <- c(
+  media = mean(aporte_directa),
+  sd    = sd(aporte_directa)
+)
+
+resumen_2a
+
+```
+
+## 2.d) Compra de una opción call europea con K = Kf - 5000
+
+```{r}
+## Strike de la call europea
+Kf_ne      <- S0_ne * exp(15 * 12 * 0.0035)
+K_call_eur <- Kf_ne - 5000
+
+n_calls         <- 200
+precio_0_call   <- 0   
+res_eur_2d <- europea(
+  u_2       = u2_col,
+  d_2       = d2_col,
+  n         = n_pasos,
+  moneda    = "colones",
+  omega_sim = omega_sim_col,  # misma lista de omegas en colones
+  uS        = uS,             # uS y dS vienen del CRR
+  dS        = dS,
+  accion    = S0_ne,
+  contrato  = precio_0_call,  
+  K         = K_call_eur,
+  nsim      = n_sims,
+  cant      = n_calls
+)
+
+resumen_2d <- c(
+  media = mean(res_eur_2d$aporte),
+  sd    = sd(res_eur_2d$aporte)
+)
+
+resumen_2d
+
+```
+
+
+
+
