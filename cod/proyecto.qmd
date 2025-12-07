@@ -250,7 +250,7 @@ dS_dol
 ```
 
 
-## Valor esperado teórico en t=0
+## Valor esperado teórico en t = 0
 
 ```{r}
 P_col <- function(T) {
@@ -260,32 +260,59 @@ P_col <- function(T) {
 P_usd <- function(T) {
   as.numeric(forward(0, 0, T, "dolares"))
 }
-
 ```
 
+### Bonos Cero Cupón
 
 ```{r}
-
-
-#-----------------------------
-# 1. Bonos cero cupón
-#-----------------------------
-
 # Colones: 5 bonos de ¢10.000.000 a 3, 7, 12, 15 y 20 años
 V0_ceros_col <- sum(
   10000000 * P_col(c(3, 7, 12, 15, 20))
 )
+V0_ceros_col
 
 # Dólares: 3 bonos de $15.000 a 5, 10 y 16 años
 V0_ceros_usd <- sum(
   15000 * P_usd(c(5, 10, 16))
 )
+V0_ceros_usd
+```
+
+### Bonos cuponados
+
+```{r}
+bono_cuponado <- function(tasa, freq, T, nominal, moneda){
+  if(moneda == 'colones') f = P_col
+  else f = P_usd
+  dt       <- 1 / freq
+  tiempos  <- seq(dt, T, by = dt)
+  cupon    <- nominal * tasa #asumimos tasa por periodo
+  sum(cupon * sapply(tiempos, f)) + nominal * f(T)
+}
+```
+
+```{r}
+# Colones: Mensual de 3% a 10 años, trimestral de 5% a 15 años y anual de 8% a 17 años. 20 millones
+mensual <- bono_cuponado(0.03, 12, 10, 20000000, 'colones')
+mensual
+trimestral <- bono_cuponado(0.05, 4, 15, 20000000, 'colones')
+trimestral
+anual <- bono_cuponado(0.08, 1, 17, 20000000, 'colones')
+anual
+total_cuponados_col <- mensual + trimestral + anual
+
+# Dólares: Bianual de 7% a 15 años, 20 mil
+bianual <- bono_cuponado(0.07, 0.5, 15, 20000, 'dolares')
+bianual
+```
+
+
+```{r}
 
 #-----------------------------
 # 2. Bonos cuponados
 #-----------------------------
 
-# Función genérica para bono cuponado en colones
 precio_bono_col <- function(tasa, freq, T, nominal) {
   dt       <- 1 / freq
   tiempos  <- seq(dt, T, by = dt)
