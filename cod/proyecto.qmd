@@ -363,7 +363,7 @@ data.frame(
 ## Valor esperado basado en simulaciones
 
 ```{r}
-n_sims  <- 10
+n_sims  <- 10000
 n_pasos <- 15 * 12
 S0_ne  <- 24000
 u2_col <- 1.0001
