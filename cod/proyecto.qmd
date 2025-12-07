@@ -442,8 +442,128 @@ resumen_horizontes <- data.frame(
 resumen_horizontes
 ```
 
+## Bonos cero cupón
+### Colones
+```{r}
+T_bcc_col   <- c(3, 7, 12, 15, 20)
+n_bonos_col   <- length(T_bcc_col)
+n_h           <- length(horizontes)
+nominal <- 10000000
+precio_bcc_col <- lapply(seq_len(n_bonos_col), function(k) {
+  matrix(NA_real_, nrow = n_sims, ncol = n_h)
+})
+names(precio_bcc_col) <- paste0("T_", T_bcc_col)
 
+for (i in seq_len(n_sims)) {
+  
+  tasas_colones <- ho_lee(u2_col, d2_col, n_pasos, "colones", omega_sim_col[[i]])
+  
+  for (k in seq_along(T_bcc_col)) {
+    T_bono  <- T_bcc_col[k]
+    n_bono  <- as.integer(T_bono * 12)         
+    idx_venc <- n_bono + 1L                    
+    
+    col_bono <- otros_precios(
+      u_2    = u2_col,
+      d_2    = d2_col,
+      n      = n_bono,
+      moneda = "colones",
+      omegas = omega_sim_col[[i]]
+    )
+    
+    for (j in seq_along(horizontes)) {
+      idx <- pasos_h[j] + 1L   
+      
+      if (idx <= idx_venc) { # Si no ha vencido
+        precio_bcc_col[[k]][i, j] <- nominal*col_bono$precio[idx]
+      } else { # Si ya venció
+        precio_bcc_col[[k]][i, j] <- nominal*exp(sum(tasas_colones$r_t[(idx_venc + 1L):idx]))
+      }
+    }
+  }
+}
+resumen_bcc_col <- bind_rows(lapply(seq_along(T_bcc_col), function(k) {
+  data.frame(
+    T_bono    = T_bcc_col[k],
+    horizonte = horizontes,
+    mean_val  = colMeans(precio_bcc_col[[k]]),
+    sd_val    = apply(precio_bcc_col[[k]], 2, sd)
+  )
+}))
+resumen_bcc_col
 
+total_bcc_col_path <- Reduce("+", precio_bcc_col) #suma de precios por horizonte, por simulación
+
+resumen_bcc_col_total <- data.frame(
+  horizonte = horizontes,
+  mean_val  = colMeans(total_bcc_col_path),
+  sd_val    = apply(total_bcc_col_path, 2, sd)
+)
+
+resumen_bcc_col_total
+```
+
+### Dólares
+```{r}
+T_bcc_dol   <- c(5, 10, 16)
+n_bonos_dol   <- length(T_bcc_dol)
+n_h           <- length(horizontes)
+nominal <- 15000
+precio_bcc_dol <- lapply(seq_len(n_bonos_dol), function(k) {
+  matrix(NA_real_, nrow = n_sims, ncol = n_h)
+})
+names(precio_bcc_dol) <- paste0("T_", T_bcc_dol)
+
+for (i in seq_len(n_sims)) {
+  
+  tasas_dolones <- ho_lee(u2_dol, d2_dol, n_pasos, "dolares", omega_sim_dol[[i]])
+  
+  for (k in seq_along(T_bcc_dol)) {
+    T_bono  <- T_bcc_dol[k]
+    n_bono  <- as.integer(T_bono * 12)         
+    idx_venc <- n_bono + 1L                    
+    
+    dol_bono <- otros_precios(
+      u_2    = u2_dol,
+      d_2    = d2_dol,
+      n      = n_bono,
+      moneda = "dolares",
+      omegas = omega_sim_dol[[i]]
+    )
+    
+    for (j in seq_along(horizontes)) {
+      idx <- pasos_h[j] + 1L   
+      
+      if (idx <= idx_venc) { # Si no ha vencido
+        precio_bcc_dol[[k]][i, j] <- nominal*dol_bono$precio[idx]
+      } else { # Si ya venció
+        precio_bcc_dol[[k]][i, j] <- nominal*exp(sum(tasas_dolones$r_t[(idx_venc + 1L):idx]))
+      }
+    }
+  }
+}
+resumen_bcc_dol <- bind_rows(lapply(seq_along(T_bcc_dol), function(k) {
+  data.frame(
+    T_bono    = T_bcc_dol[k],
+    horizonte = horizontes,
+    mean_val  = colMeans(precio_bcc_dol[[k]]),
+    sd_val    = apply(precio_bcc_dol[[k]], 2, sd)
+  )
+}))
+resumen_bcc_dol
+
+total_bcc_dol_path <- Reduce("+", precio_bcc_dol) #suma de precios por horizonte, por simulación
+
+resumen_bcc_dol_total <- data.frame(
+  horizonte = horizontes,
+  mean_val  = colMeans(total_bcc_dol_path),
+  sd_val    = apply(total_bcc_dol_path, 2, sd)
+)
+
+resumen_bcc_dol_total
+```
+
+## Bonos cuponados
 
 
 # Sección II: Análisis de expansión accionaria
