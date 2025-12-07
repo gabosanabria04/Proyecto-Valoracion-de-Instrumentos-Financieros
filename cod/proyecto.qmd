@@ -427,19 +427,24 @@ for (i in seq_len(n_sims)) {
     S_col_t <- camino_col_i$S[idx_t]
     S_dol_t <- camino_dol_i$S[idx_t]
     V_acc_col_path[i, j] <- 500 * S_col_t
-    V_acc_dol_path[i, j] <- 300 * S_dol_t   # cámbialo si el número de acciones es distinto
+    V_acc_dol_path[i, j] <- 300 * S_dol_t 
   }
 }
 
 
-resumen_horizontes <- data.frame(
+resumen_acciones <- data.frame(
   horizonte = horizontes,
   mean_col  = colMeans(V_acc_col_path),
   sd_col    = apply(V_acc_col_path,  2, sd),
   mean_dol  = colMeans(V_acc_dol_path),
   sd_dol    = apply(V_acc_dol_path,  2, sd)
 )
-resumen_horizontes
+resumen_acciones
+write.csv(
+  resumen_horizontes,
+  file = "../res/resumen_acciones.csv",
+  row.names = FALSE
+)
 ```
 
 ## Bonos cero cupón
@@ -501,6 +506,11 @@ resumen_bcc_col_total <- data.frame(
 )
 
 resumen_bcc_col_total
+write.csv(
+  resumen_bcc_col_total,
+  file = "../res/resumen_bcc_col_total.csv",
+  row.names = FALSE
+)
 ```
 
 ### Dólares
@@ -561,6 +571,11 @@ resumen_bcc_dol_total <- data.frame(
 )
 
 resumen_bcc_dol_total
+write.csv(
+  resumen_bcc_col_total,
+  file = "../res/resumen_bcc_dol_total.csv",
+  row.names = FALSE
+)
 ```
 
 ## Bonos cuponados
