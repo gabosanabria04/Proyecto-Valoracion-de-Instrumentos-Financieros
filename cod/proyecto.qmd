@@ -16,6 +16,9 @@ output:
 
 ```{r cargar curva cero cupón}
 curva <- read.csv("../data/Curva_0C.csv", sep = ";", col.names = c("vencimiento", "colones", "dolares"), dec = ",")
+curva$vencimiento <- as.numeric(curva$vencimiento)
+curva$colones     <- as.numeric(curva$colones)
+curva$dolares     <- as.numeric(curva$dolares)
 ```
 
 # Funciones Utilizadas
@@ -180,7 +183,7 @@ conjunto <- function(u_2, d_2, n, moneda, omegas, uS, dS, accion){
 
 
 # Valor del portafolio
-## Valor de acciones
+## Estimación de parámetros
 ### Colones
 Como $u(2) = 1.0001$ y $d(2) = 0.9999$, sabemos que $q = \frac{(1-d(T))}{u(T)-d(T)}$ para cualquier T, entonces $q = 0.5$
 ```{r}
@@ -212,29 +215,6 @@ uS
 dS <- exp(-sigma)
 dS
 ```
-
-## Valor esperado teórico en t=0
-
-```{r}
-curva$vencimiento <- as.numeric(curva$vencimiento)
-curva$colones     <- as.numeric(curva$colones) / 100
-curva$dolares     <- as.numeric(curva$dolares) / 100
-
-```
-
-```{r}
-P_col <- function(T) {
-  as.numeric(forward(0, 0, T, "colones"))
-}
-
-P_usd <- function(T) {
-  as.numeric(forward(0, 0, T, "dolares"))
-}
-
-```
-
-
-
 
 
 ### Dolares
@@ -268,6 +248,21 @@ uS_dol
 dS_dol <- exp(-sigma)
 dS_dol
 ```
+
+
+## Valor esperado teórico en t=0
+
+```{r}
+P_col <- function(T) {
+  as.numeric(forward(0, 0, T, "colones"))
+}
+
+P_usd <- function(T) {
+  as.numeric(forward(0, 0, T, "dolares"))
+}
+
+```
+
 
 ```{r}
 
