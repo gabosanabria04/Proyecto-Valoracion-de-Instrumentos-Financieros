@@ -342,10 +342,11 @@ V0_usd
 ```
 
 ### Valor total en colones
-Para cambiar en el tiempo 0, usamos el tipo de cambio de la fecha de corte: 09 de octubre del 2024
+Para cambiar en el tiempo 0, usamos el tipo de cambio de la fecha de corte: 31 de octubre del 2025.
+Este valor se obtuvo de [tipo de cambio promedio MONEX](https://www.bancopopular.fi.cr/wp-content/uploads/2025/11/Boletin-Local-31-10-2025.pdf?utm_source=chatgpt.com)
 Como la empresa es costarricense, usaremos el tipo de cambio de venta, pues esta deberá vender los dólares para obtener colones.
 ```{r}
-E0 <- 519.38 
+E0 <- 504.44 
 
 V0_total_colones <- V0_colones + V0_usd * E0
 V0_total_colones
@@ -362,7 +363,7 @@ data.frame(
 ## Valor esperado basado en simulaciones
 
 ```{r}
-n_sims  <- 10000
+n_sims  <- 10
 n_pasos <- 15 * 12
 S0_ne  <- 24000
 u2_col <- 1.0001
@@ -375,125 +376,7 @@ omega_sim_col <- replicate(
 )
 ```
 
-no
-```{r}
-n_meses <- 15 * 12       
-u2_col <- 1.0001
-d2_col <- 0.9999
-S0_col <- 24000         
-n_acc_col <- 500     
-# Datos 
-nom_cero_col <- 10000000
-T_cero_col   <- c(3, 7, 12, 15, 20)
 
-nom_cup_col  <- 20000000
-tasa_cup_col <- c(0.03, 0.05, 0.08)
-freq_cup_col <- c(12,      4,     1)   # mensual, trimestral, anual
-T_cup_col    <- c(10,     15,    17)
-
-
-
-simular_camino_col <- function(n_meses, u2, d2, moneda, uS, dS, S0) {
-  # Trayectoria de tasas con Ho-Lee 
-  res_rate <- ho_lee(u2, d2, n_meses, moneda)
-  r_t <- res_rate$r_t         # longitud n_meses + 1 (incluye t=0)
-  
-  # Trayectoria de la acción con CRR
-  S <- numeric(n_meses + 1)
-  S[1] <- S0
-  
-  for (i in 1:n_meses) {
-
-    q_i <- (exp(r_t[i] * dt) - dS) / (uS - dS)
-    q_i <- max(min(q_i, 1), 0)  
-    
-    up <- rbinom(1, 1, q_i)
-    S[i + 1] <- if (up == 1) S[i] * uS else S[i] * dS
-  }
-  
-  data.frame(
-    paso = 0:n_meses,
-    t    = (0:n_meses) * dt,
-    r_t  = r_t,
-    S    = S
-  )
-}
-
-
-
-valor_portafolio_col <- function(camino, t_h) {
-  # t_h en años
-  paso_h <- round(t_h / dt)   # índice del paso correspondiente
-  r_h    <- camino$r_t[paso_h + 1]
-  
-  # Acciones
-  V_acc <- n_acc_col * camino$S[paso_h + 1]
-  
-  #Bonos cero cupón
-  V_cero <- 0
-  for (T in T_cero_col) {
-    if (T <= t_h) {
-
-      V_cero <- V_cero + nom_cero_col
-    } else {
-
-      V_cero <- V_cero + nom_cero_col * exp(-r_h * (T - t_h))
-    }
-  }
-  
-
-  V_cupon <- 0
-  for (j in seq_along(T_cup_col)) {
-    Tj    <- T_cup_col[j]
-    tasaj <- tasa_cup_col[j]
-    freqj <- freq_cup_col[j]
-    
-    dtj      <- 1 / freqj
-    tiempos  <- seq(dtj, Tj, by = dtj)
-    cuponj   <- nom_cup_col * tasaj / freqj
-    
-
-    for (tj in tiempos) {
-      if (tj <= t_h) {
-
-      } else {
-        V_cupon <- V_cupon + cuponj * exp(-r_h * (tj - t_h))
-      }
-    }
-    
-
-    if (Tj > t_h) {
-      V_cupon <- V_cupon + nom_cup_col * exp(-r_h * (Tj - t_h))
-    } else {
-      V_cupon <- V_cupon + nom_cup_col
-    }
-  }
-  
-  # Valor total en colones
-  V_acc + V_cero + V_cupon
-}
-
-
-# Monte Carlo
-
-
-nsim      <- 10000
-horizontes <- c(0, 2.5, 5, 10, 15)
-
-resultados_mc_col <- matrix(NA_real_, nrow = nsim, ncol = length(horizontes))
-colnames(resultados_mc_col) <- paste0("t_", horizontes)
-
-for (sim in 1:nsim) {
-  camino <- simular_camino_col(n_meses, u2_col, d2_col, "colones", uS, dS, S0_col)
-  
-  for (j in seq_along(horizontes)) {
-    resultados_mc_col[sim, j] <- valor_portafolio_col(camino, horizontes[j])
-  }
-}
-
-resultados_mc_col <- as.data.frame(resultados_mc_col)
-head(resultados_mc_col)
-```
 
 
 # Sección II: Análisis de expansión accionaria
