@@ -565,6 +565,142 @@ resumen_bcc_dol_total
 
 ## Bonos cuponados
 
+```{r}
+simular_bonos_cuponados <- function(T_bonos, tasa, freq, nominal,
+                                       u2, d2, n_pasos,
+                                       omega_sim, horizontes,
+                                       moneda) {
+  n_sims  <- length(omega_sim)
+  n_bonos <- length(T_bonos)
+  n_h     <- length(horizontes)
+  
+  precio_bc <- lapply(seq_len(n_bonos), function(k) {
+    matrix(NA_real_, nrow = n_sims, ncol = n_h)
+  })
+  names(precio_bc) <- paste0("T_", T_bonos)
+  
+  for (i in seq_len(n_sims)) {
+    
+    tasas_i <- ho_lee(u2, d2, n_pasos, moneda, omega_sim[[i]])
+    r_path  <- tasas_i$r_t
+    
+    for (k in seq_along(T_bonos)) {
+      T_k    <- T_bonos[k]   
+      tasa_k <- tasa[k]       
+      freq_k <- freq[k]       
+      
+      dt_pay  <- 1 / freq_k
+      tiempos <- seq(dt_pay, T_k, by = dt_pay)      
+      cupon   <- nominal * tasa_k                  
+      
+      CF_amounts <- rep(cupon, length(tiempos))
+      CF_amounts[length(CF_amounts)] <- cupon + nominal #último pago
+      
+      CF_months <- as.integer(round(tiempos * 12))
+      CF_idx    <- CF_months + 1L 
+      
+      for (j in seq_along(horizontes)) {
+        S    <- horizontes[j]
+        Sm   <- as.integer(round(S * 12))
+        idxS <- Sm + 1L
+        
+        valor_S <- 0
+        
+        for (l in seq_along(tiempos)) {
+          t_cf    <- tiempos[l]
+          idx_cf  <- CF_idx[l]
+          C_fl    <- CF_amounts[l]
+          
+          if (t_cf >= S){ #No han pagado cupón
+            n_cf <- CF_months[l]
+            precios_cf <- otros_precios(
+              u_2    = u2,
+              d_2    = d2,
+              n      = n_cf,
+              moneda = moneda,
+              omegas = omega_sim[[i]]
+            )
+            
+            P_S_cf <- precios_cf$precio[idxS]
+            
+            valor_S <- valor_S + C_fl * P_S_cf
+            
+          } else{ #Ya pagado
+            valor_S <- valor_S + C_fl * exp(sum(r_path[(idx_cf + 1L):idxS]))
+          }
+        }
+        precio_bc[[k]][i, j] <- valor_S
+      }
+    }
+  }
+  
+  # Suma de todos los cuponados por simulación y horizonte
+  total_bc_path <- Reduce("+", precio_bc)
+  
+  resumen_bc_total <- data.frame(
+    horizonte = horizontes,
+    mean_val  = colMeans(total_bc_path),
+    sd_val    = apply(total_bc_path, 2, sd)
+  )
+  
+  list(
+    precio_por_bono = precio_bc,      
+    total_path      = total_bc_path,  
+    resumen_total   = resumen_bc_total
+  )
+}
+```
+
+```{r}
+# Colones: mensual 3% a 10 años, trimestral 5% a 15 años, anual 8% a 17 años, todos de 20 millones
+T_bc_col    <- c(10, 15, 17)
+tasa_bc_col <- c(0.03, 0.05, 0.08)
+freq_bc_col <- c(12, 4, 1)
+nominal_bc  <- 20000000
+
+res_bc_col <- simular_bonos_cuponados(
+  T_bonos    = T_bc_col,
+  tasa       = tasa_bc_col,
+  freq       = freq_bc_col,
+  nominal    = nominal_bc,
+  u2         = u2_col,
+  d2         = d2_col,
+  n_pasos    = n_pasos,         
+  omega_sim  = omega_sim_col,   
+  horizontes = horizontes,      
+  moneda     = "colones"
+)
+
+res_bc_col$resumen_total
+
+```
+
+
+```{r}
+# Dólares: Bianual de 7% a 15 años, 20 mil
+T_bc_dol    <- c(15)
+tasa_bc_dol <- c(0.07)
+freq_bc_dol <- c(0.5)
+nominal_bc  <- 20000
+
+res_bc_dol <- simular_bonos_cuponados(
+  T_bonos    = T_bc_dol,
+  tasa       = tasa_bc_dol,
+  freq       = freq_bc_dol,
+  nominal    = nominal_bc,
+  u2         = u2_dol,
+  d2         = d2_dol,
+  n_pasos    = n_pasos,         
+  omega_sim  = omega_sim_dol,   
+  horizontes = horizontes,      
+  moneda     = "dolares"
+)
+
+res_bc_dol$resumen_total
+```
+
+
+
 
 # Sección II: Análisis de expansión accionaria
 
