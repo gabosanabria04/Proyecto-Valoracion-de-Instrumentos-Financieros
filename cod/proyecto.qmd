@@ -369,12 +369,79 @@ S0_ne  <- 24000
 u2_col <- 1.0001
 d2_col <- 0.9999
 q_col  <- (1 - d2_col) / (u2_col - d2_col)
+S0_dol <- 120
+u2_dol <- 1.00005
+d2_dol <- 0.99995
+q_dol <- (1 - d2_dol) / (u2_dol - d2_dol)
 omega_sim_col <- replicate(
   n_sims,
   rbinom(n = n_pasos, size = 1, prob = q_col),
   simplify = FALSE
 )
+omega_sim_dol <- replicate(
+  n_sims,
+  rbinom(n = n_pasos, size = 1, prob = q_dol),
+  simplify = FALSE
+)
+horizontes <- c(2.5, 10, 15)
+pasos_h    <- as.integer(horizontes * 12)
 ```
+
+### Acciones
+```{r}
+V_port_path <- matrix(NA_real_, nrow = n_sims, ncol = length(horizontes))
+colnames(V_port_path) <- paste0("t_", horizontes)
+
+n_h <- length(horizontes)
+
+V_acc_col_path <- matrix(NA_real_, nrow = n_sims, ncol = n_h)
+V_acc_dol_path <- matrix(NA_real_, nrow = n_sims, ncol = n_h)
+
+for (i in seq_len(n_sims)) {
+  # acciones nacionales
+  camino_col_i <- conjunto(
+    u_2    = u2_col,
+    d_2    = d2_col,
+    n      = n_pasos,           
+    moneda = "colones",
+    omegas = omega_sim_col[[i]],
+    uS     = uS,
+    dS     = dS,
+    accion = S0_ne              
+  )
+  
+  # acciones internacionales
+  camino_dol_i <- conjunto(
+    u_2    = u2_dol,
+    d_2    = d2_dol,
+    n      = n_pasos,           
+    moneda = "dolares",
+    omegas = omega_sim_dol[[i]],
+    uS     = uS_dol,
+    dS     = dS_dol,
+    accion = S0_dol              
+  )
+  
+  for (j in seq_along(horizontes)) {
+    idx_t <- pasos_h[j] + 1L     
+    S_col_t <- camino_col_i$S[idx_t]
+    S_dol_t <- camino_dol_i$S[idx_t]
+    V_acc_col_path[i, j] <- 500 * S_col_t
+    V_acc_dol_path[i, j] <- 300 * S_dol_t   # cámbialo si el número de acciones es distinto
+  }
+}
+
+
+resumen_horizontes <- data.frame(
+  horizonte = horizontes,
+  mean_col  = colMeans(V_acc_col_path),
+  sd_col    = apply(V_acc_col_path,  2, sd),
+  mean_dol  = colMeans(V_acc_dol_path),
+  sd_dol    = apply(V_acc_dol_path,  2, sd)
+)
+resumen_horizontes
+```
+
 
 
 
