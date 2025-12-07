@@ -363,7 +363,7 @@ data.frame(
 ## Valor esperado basado en simulaciones
 
 ```{r}
-n_sims  <- 10000
+n_sims  <- 10
 n_pasos <- 15 * 12
 S0_ne  <- 24000
 u2_col <- 1.0001
@@ -447,7 +447,7 @@ write.csv(
 )
 ```
 
-## Bonos cero cupón
+### Bonos cero cupón
 ### Colones
 ```{r}
 T_bcc_col   <- c(3, 7, 12, 15, 20)
@@ -572,13 +572,13 @@ resumen_bcc_dol_total <- data.frame(
 
 resumen_bcc_dol_total
 write.csv(
-  resumen_bcc_col_total,
+  resumen_bcc_dol_total,
   file = "../res/resumen_bcc_dol_total.csv",
   row.names = FALSE
 )
 ```
 
-## Bonos cuponados
+### Bonos cuponados
 
 ```{r}
 simular_bonos_cuponados <- function(T_bonos, tasa, freq, nominal,
@@ -599,7 +599,7 @@ simular_bonos_cuponados <- function(T_bonos, tasa, freq, nominal,
     tasas_i <- ho_lee(u2, d2, n_pasos, moneda, omega_sim[[i]])
     r_path  <- tasas_i$r_t
     
-    for (k in seq_along(T_bonos)) {
+    for (k in seq_along(T_bonos)){
       T_k    <- T_bonos[k]   
       tasa_k <- tasa[k]       
       freq_k <- freq[k]       
@@ -687,7 +687,11 @@ res_bc_col <- simular_bonos_cuponados(
 )
 
 res_bc_col$resumen_total
-
+write.csv(
+  res_bc_col$resumen_total,
+  file = "../res/cuponados_colones.csv",
+  row.names = FALSE
+)
 ```
 
 
@@ -712,7 +716,61 @@ res_bc_dol <- simular_bonos_cuponados(
 )
 
 res_bc_dol$resumen_total
+write.csv(
+  res_bc_dol$resumen_total,
+  file = "../res/cuponados_dolares.csv",
+  row.names = FALSE
+)
 ```
+
+### Valor total
+```{r}
+## Tipo de cambio por horizonte
+tc_h <- E0 * sapply(horizontes, function(T) P_usd(T) / P_col(T))
+
+## Componentes en colones
+val_acc_col   <- resumen_acciones$mean_col
+val_bcc_col   <- resumen_bcc_col_total$mean_val
+val_cup_col   <- res_bc_col$resumen_total$mean_val
+
+## Componentes en dólares
+val_acc_dol   <- resumen_acciones$mean_dol
+val_bcc_dol   <- resumen_bcc_dol_total$mean_val
+val_cup_dol   <- res_bc_dol$resumen_total$mean_val
+
+## Totales por horizonte
+total_colones <- val_acc_col + val_bcc_col + val_cup_col
+total_dolares <- val_acc_dol + val_bcc_dol + val_cup_dol
+
+## Data frame final
+resumen_portafolio <- data.frame(
+  horizonte     = horizontes,
+  colones       = total_colones,
+  dolares       = total_dolares,
+  tipo_cambio   = tc_h,
+  total_colones = total_colones + total_dolares * tc_h
+)
+
+fila_0 <- data.frame(
+  horizonte     = 0,
+  colones       = V0_colones,
+  dolares       = V0_usd,
+  tipo_cambio   = E0,
+  total_colones = V0_total_colones
+)
+
+resumen_portafolio <- rbind(fila_0, resumen_portafolio)
+
+resumen_portafolio
+
+
+write.csv(
+  resumen_portafolio,
+  file = "../res/resumen_portafolio.csv",
+  row.names = FALSE
+)
+```
+
 
 
 
@@ -720,7 +778,6 @@ res_bc_dol$resumen_total
 # Sección II: Análisis de expansión accionaria
 
 ## Compra directa
-sacar omegas
 ```{r}
 S15_ne <- numeric(n_sims)
 
@@ -750,7 +807,7 @@ resumen_2a
 ```
 
 ## Compra de una opción call europea 
-sacar omegas
+
 ```{r}
 Kf_ne      <- S0_ne * exp(15 * 12 * 0.0035)
 K_call_eur <- Kf_ne - 5000
@@ -781,4 +838,19 @@ resumen_2d
 ```
 
 
+```{r}
+resumen_comparacion <- data.frame(
+  Estrategia = c("Compra directa", "Opción Call Europea"),
+  media      = c(resumen_2a["media"], resumen_2d["media"]),
+  sd         = c(resumen_2a["sd"],    resumen_2d["sd"])
+)
+
+resumen_comparacion
+
+write.csv(
+  resumen_comparacion,
+  file = "../res/expansion_accionaria.csv",
+  row.names = FALSE
+)
+```
 
