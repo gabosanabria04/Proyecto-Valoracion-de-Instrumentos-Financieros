@@ -235,6 +235,40 @@ P_usd <- function(T) {
 
 
 
+
+
+### Dolares
+Como $u(2) = 1.0005$ y $d(2) = 0.99995$, sabemos que $q = \frac{(1-d(T))}{u(T)-d(T)}$ para cualquier T, entonces $q = 0.5$
+```{r}
+q_dol <- (1-0.99995)/(1.0005 - 0.99995)
+q_dol
+```
+Para estimar los parámetros de subida  bajada de las acciones, utilizamos el Modelo Cox-Ross-Rubinstein. Por tanto, usamos la fórmula $\sigma^2*\Delta t = \ln(\frac{S_{t + \Delta t}}{S_t})$; en este caso, tanto las acciones como las tasas avanzan mensualmente, por tanto, $\Delta t = 1$
+```{r}
+S_int <- readxl::read_excel("../data/precio_acciones_internacionales.xlsx")
+```
+
+```{r, warning=FALSE}
+library(dplyr)
+
+S_int <- S_int %>% arrange(Date)
+
+S_int <- S_int %>%
+  mutate(ret_log = log(`Close Price` / lag(`Close Price`)))
+
+sigma1 <- var(S_int$ret_log, na.rm = TRUE)
+sigma <- sqrt(sigma1)
+
+sigma
+```
+Ahora, utilizando $u = \frac 1d = e^{\sigma \Delta t}$, obtenemos $u = 1.043396$ y $d = 0.9584087$
+```{r}
+uS_dol <- exp(sigma)
+uS_dol
+dS_dol <- exp(-sigma)
+dS_dol
+```
+
 ```{r}
 
 
