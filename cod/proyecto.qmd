@@ -772,6 +772,7 @@ write.csv(
 ```
 
 ## Análisis de Riesgo
+### Pérdida
 ```{r}
 tc_mat <- matrix(tc_h, nrow = n_sims, ncol = length(horizontes), byrow = TRUE)
 
@@ -796,11 +797,9 @@ benchmark_mat <- matrix(
 
 
 loss_path <- benchmark_mat - V_port_total_col_path # teórico - escenario
-loss_path
 ```
 
 ```{r}
-# Escenario pesimista: VaR y CVaR al 95%
 p_pes  <- 0.95
 n_h    <- ncol(loss_path)
 
@@ -837,18 +836,77 @@ resumen_riesgo
 ```
 
 ```{r}
-resumen_portafolio <- resumen_portafolio %>%
+resumen_riesgo <- resumen_portafolio %>%
   left_join(resumen_riesgo, by = "horizonte")
 
-resumen_portafolio
+resumen_riesgo
 write.csv(
-  resumen_portafolio,
-  file = "../res/resumen_riesgo.csv",
+  resumen_riesgo,
+  file = "../res/resumen_pérdidas.csv",
   row.names = FALSE
 )
 ```
 
+### Valor del portafolio
+```{r}
+V_mat <- V_port_total_col_path
+n_h   <- ncol(V_mat)
 
+
+# Escenario pesimista
+
+p_pes    <- 0.95
+alpha_pes <- 1 - p_pes  
+
+VaR_95_val  <- numeric(n_h)
+CVaR_95_val <- numeric(n_h)
+
+for (j in seq_len(n_h)) {
+  Vj <- V_mat[, j]  
+  VaR_95_val[j]  <- as.numeric(quantile(Vj, probs = alpha_pes, names = FALSE))
+  CVaR_95_val[j] <- mean(Vj[Vj <= VaR_95_val[j]])
+}
+
+# Escenario optimista
+
+p_opt     <- 0.30
+alpha_opt <- 1 - p_opt  
+
+VaR_30_val  <- numeric(n_h)
+CVaR_30_val <- numeric(n_h)
+
+for (j in seq_len(n_h)) {
+  Vj <- V_mat[, j]
+  VaR_30_val[j]  <- as.numeric(quantile(Vj, probs = alpha_opt, names = FALSE))
+  CVaR_30_val[j] <- mean(Vj[Vj >= VaR_30_val[j]])
+}
+
+```
+
+```{r}
+riesgo_port_df <- data.frame(
+  horizonte   = horizontes,
+  VaR_95_val  = VaR_95_val,
+  CVaR_95_val = CVaR_95_val,
+  VaR_30_val  = VaR_30_val,
+  CVaR_30_val = CVaR_30_val
+)
+
+riesgo_port_df
+
+```
+
+```{r}
+riesgo_port_df <- resumen_portafolio %>%
+  left_join(riesgo_port_df, by = "horizonte")
+
+riesgo_port_df
+write.csv(
+  riesgo_port_df,
+  file = "../res/resumen_riesgo.csv",
+  row.names = FALSE
+)
+```
 
 
 
