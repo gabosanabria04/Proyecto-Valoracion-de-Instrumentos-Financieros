@@ -441,7 +441,7 @@ resumen_acciones <- data.frame(
 )
 resumen_acciones
 write.csv(
-  resumen_horizontes,
+  resumen_acciones,
   file = "../res/resumen_acciones.csv",
   row.names = FALSE
 )
@@ -767,6 +767,83 @@ resumen_portafolio
 write.csv(
   resumen_portafolio,
   file = "../res/resumen_portafolio.csv",
+  row.names = FALSE
+)
+```
+
+## Análisis de Riesgo
+```{r}
+tc_mat <- matrix(tc_h, nrow = n_sims, ncol = length(horizontes), byrow = TRUE)
+
+valor_col_path <- V_acc_col_path +
+                  total_bcc_col_path +
+                  res_bc_col$total_path
+
+valor_dol_path <- V_acc_dol_path +
+                  total_bcc_dol_path +
+                  res_bc_dol$total_path
+
+V_port_total_col_path <- valor_col_path + valor_dol_path * tc_mat
+
+precio_teorico <- colMeans(V_port_total_col_path)
+
+benchmark_mat <- matrix(
+  precio_teorico,
+  nrow = n_sims,
+  ncol = length(horizontes),
+  byrow = TRUE
+)
+
+
+loss_path <- benchmark_mat - V_port_total_col_path # teórico - escenario
+loss_path
+```
+
+```{r}
+# Escenario pesimista: VaR y CVaR al 95%
+p_pes  <- 0.95
+n_h    <- ncol(loss_path)
+
+VaR_95  <- numeric(n_h)
+CVaR_95 <- numeric(n_h)
+
+for (j in seq_len(n_h)) {
+  L <- loss_path[, j]
+  VaR_95[j]  <- as.numeric(quantile(L, probs = p_pes, names = FALSE))
+  CVaR_95[j] <- mean(L[L >= VaR_95[j]]) 
+}
+
+# Escenario optimista: VaR y "CVaR" al 30% usando la cola inferior
+p_opt <- 0.30
+
+VaR_30  <- numeric(n_h)
+CVaR_30 <- numeric(n_h)
+
+for (j in seq_len(n_h)) {
+  L <- loss_path[, j]
+  VaR_30[j]  <- as.numeric(quantile(L, probs = p_opt, names = FALSE))
+  CVaR_30[j] <- mean(L[L <= VaR_30[j]])  # cola inferior (escenario optimista)
+}
+
+resumen_riesgo <- data.frame(
+  horizonte = horizontes,
+  VaR_95    = VaR_95,
+  CVaR_95   = CVaR_95,
+  VaR_30    = VaR_30,
+  CVaR_30   = CVaR_30
+)
+
+resumen_riesgo
+```
+
+```{r}
+resumen_portafolio <- resumen_portafolio %>%
+  left_join(resumen_riesgo, by = "horizonte")
+
+resumen_portafolio
+write.csv(
+  resumen_portafolio,
+  file = "../res/resumen_riesgo.csv",
   row.names = FALSE
 )
 ```
