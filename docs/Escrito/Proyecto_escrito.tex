@@ -226,14 +226,23 @@ En cada horizonte, el valor del portafolio se calcula como la suma del valor de 
 
 \subsection{Medidas de desempeño y riesgo}
 
-A partir de la distribución empírica obtenida mediante las simulaciones, se estiman las siguientes medidas para cada horizonte temporal:
+A partir de la distribución empírica obtenida mediante simulación, se calculan, para cada horizonte temporal, las siguientes medidas sobre la variable aleatoria $X$ que representa el valor del portafolio:
 
 \begin{itemize}
-  \item Valor esperado numérico, calculado como la media muestral.
-  \item Valor en Riesgo (VaR) para niveles de confianza del 95\% y 30\%, i.e. $F_X(\mathrm{VaR}_p) = \Pr\bigl[X \le \mathrm{VaR}_p\bigr] = p
-$
-  \item Valor en Riesgo Condicional (CVaR), definido como la esperanza condicional del valor del portafolio en las colas correspondientes de la distribución, i.e. $\mathrm{CVaR}_p(X) = \mathbb{E}\bigl[X \mid X \ge \mathrm{VaR}_p\bigr]
-$
+  \item \textbf{Valor esperado}, estimado mediante la media muestral de $X$.
+
+  \item \textbf{Valor en Riesgo (VaR)} para niveles de confianza del 95\% y 30\%, definido como el cuantil $p$ de la distribución de $X$:
+  $$
+    F_X(\mathrm{VaR}_p)
+    = \Pr\bigl[X \le \mathrm{VaR}_p\bigr]
+    = p.
+  $$
+
+  \item \textbf{Valor en Riesgo Condicional (CVaR)}, definido como la esperanza condicional de $X$ en la cola correspondiente de la distribución:
+  $$
+    \mathrm{CVaR}_p(X)
+    = \mathbb{E}\bigl[X \mid X \ge \mathrm{VaR}_p\bigr].
+  $$
 \end{itemize}
 
 
