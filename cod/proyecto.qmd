@@ -237,9 +237,9 @@ dS
 
 
 ### Dolares
-Como $u(2) = 1.0005$ y $d(2) = 0.99995$, sabemos que $q = \frac{(1-d(T))}{u(T)-d(T)}$ para cualquier T, entonces $q = 0.5$
+Como $u(2) = 1.00005$ y $d(2) = 0.99995$, sabemos que $q = \frac{(1-d(T))}{u(T)-d(T)}$ para cualquier T, entonces $q = 0.5$
 ```{r}
-q_dol <- (1-0.99995)/(1.0005 - 0.99995)
+q_dol <- (1-0.99995)/(1.00005 - 0.99995)
 q_dol
 ```
 Para estimar los parámetros de subida  bajada de las acciones, utilizamos el Modelo Cox-Ross-Rubinstein. Por tanto, usamos la fórmula $\sigma^2*\Delta t = \ln(\frac{S_{t + \Delta t}}{S_t})$; en este caso, tanto las acciones como las tasas avanzan mensualmente, por tanto, $\Delta t = 1$
