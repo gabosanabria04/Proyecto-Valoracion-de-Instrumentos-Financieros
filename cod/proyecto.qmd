@@ -74,7 +74,7 @@ ho_lee <- function(u_2, d_2, n, moneda, bern){
       U <- U + 1
     }
     resultados$U_t[i+1] <- U
-    d <- k^(i-1)/((1-q)*k^(i-1) + q)
+    d <- k^(i)/((1-q)*k^(i) + q) #d(t + 1)
     resultados$d[i+1] <- d
     r_t <- -log(forward(0, S, S+1/12, moneda)) - log(d) + U*log(k)
     resultados$r_t[i+1] <- r_t
