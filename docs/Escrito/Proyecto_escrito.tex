@@ -116,25 +116,21 @@ las cuales garantizan que toda la estructura de tasas utilizada en el modelo sea
 
 \subsection{Modelo de tasas de interés: Ho–Lee}
 
-En el enfoque Ho–Lee en tiempo discreto, se construyó un árbol binomial para la tasa corta con pasos mensuales $\Delta t=\tfrac{1}{12}$ años. En cada nodo la tasa puede *subir* o *bajar* mediante dos factores fijos
+En el enfoque Ho–Lee en tiempo discreto, se construyó un árbol binomial para la tasa corta con pasos mensuales $\Delta t=\tfrac{1}{12}$ años. En cada nodo la tasa puede subir o bajar mediante los factores
 \[
-u(2)=u_2,\qquad d(2)=d_2,\qquad 0<d_2<u_2,
+u(t) \text{ y } d(t)
 \]
 y se define
 \[
-k=\frac{d_2}{u_2}\in(0,1).
+k=\frac{d(2)}{u(2)}\in(0,1).
 \]
 
 La tasa corta inicial se fija a partir del descuento de un mes:
 $$
-r_0=-\log!\bigl(P(0,\Delta t)\bigr),
+r_0=-\log\bigl(P(0,\Delta t)\bigr),
 \qquad \Delta t=\tfrac{1}{12}.
 $$
-Para cada mes, el modelo debe replicar la estructura de forwards implícita en el mercado. En la implementación, el nivel “de referencia” para ese intervalo se toma como
-$$
-f(0;t,t+\Delta t);=;-\log\bigl(P_F(0,t,t+\Delta t)\bigr),
-$$
-y la tasa en un nodo se obtiene ajustando ese forward con el desplazamiento del árbol:
+Para cada mes, la tasa en un nodo se obtiene ajustando ese forward con el desplazamiento del árbol:
 $$
 r_{t+\Delta t} =
 -\log\bigl(P_F(0,t,t+\Delta t)
@@ -150,7 +146,7 @@ donde:
 
 La probabilidad de “subir” se toma constante en todos los nodos:
 $$
-q=\frac{1-d_2}{u_2-d_2},
+q=\frac{1-d(2)}{u(2)-d(2)},
 $$
 y se utiliza tanto en el árbol de tasas cortas como en el árbol de precios.
 
@@ -180,7 +176,7 @@ k^{T-1}=\frac{d(T)}{u(T)}.
 Se construye un árbol conjunto que combina:
 \begin{enumerate}
   \item la tasa corta $r_t$ bajo el modelo de Ho-Lee;
-  \item el precio de la acción $S_t$ bajo un esquema binomial tipo CRR.
+  \item el precio de la acción $S_t$ bajo un esquema binomial.
 \end{enumerate}
 
 \subsubsection*{Tasas de interés (Ho-Lee)}
@@ -248,7 +244,7 @@ A partir de la distribución empírica obtenida mediante simulación, se calcula
 
 \section{Resultados}
 
-En esta sección se presentan los resultados obtenidos a partir de la construcción de árboles binomiales, del árbol conjunto acción--tasa y de la simulación de trayectorias mediante Monte Carlo, de acuerdo con los procedimientos descritos en la metodología.
+En esta sección se presentan los resultados obtenidos a partir de la construcción de árboles binomiales, del árbol conjunto acción-tasa y de la simulación de trayectorias mediante Monte Carlo, de acuerdo con los procedimientos descritos en la metodología.
 
 \subsection{Árbol de precios de la acción}
 
