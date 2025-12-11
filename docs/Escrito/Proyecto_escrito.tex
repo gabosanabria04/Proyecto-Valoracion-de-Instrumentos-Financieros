@@ -8,13 +8,13 @@
 \usepackage{setspace}
 \usepackage{graphicx}
 \usepackage{booktabs}
-\usepackage{amsmath, amssymb}
+\usepackage{amsmath, amssymb} 
 \usepackage{hyperref}
 
 \geometry{margin=2.5cm}
 \onehalfspacing
 
-\title{Evaluación Actuarial del Portafolio de Smart Investments S.A.}
+\title{Evaluación Actuarial de Portafolio: Smart Investments S.A.}
 \author{
 Paola Espinoza Hernández\\
 Gabriel Sanabria Alvarado\\
@@ -35,331 +35,72 @@ Joseph Romero Chinchilla
 
 \subsection{Inversiones en colones}
 
+A la fecha de corte, las inversiones denominadas en colones están constituidas por:
+
+\begin{itemize}
+  \item \textbf{Bonos cero cupón}: cinco títulos con vencimientos a 3, 7, 12, 15 y 20 años, cada uno con valor nominal de ₡10\,000\,000.
+  \item \textbf{Bonos cuponados}: tres bonos corporativos con cupones del 3\%, 5 \% y 8 \%, pagaderos de forma mensual, trimestral y anual, respectivamente. Estos bonos tienen vencimientos a 10, 15 y 17 años, y valores nominales de ₡20\,000\,000 cada uno.
+  \item \textbf{Acciones locales}: 500 acciones de Nacional de Energía S.A., con precio actual de ₡24\,000 por acción.
+\end{itemize}
+
 \subsection{Inversiones en dólares}
-\section{Marco te\'orico}
 
-
-\subsection{Teorema fundamental de la valorizaci\'on}
-
-Sea \(\{H_s\}_{s \geq 0}\) la secuencia de flujos de efectivo generados por el portafolio y sea \(D(t,s)\) el factor estoc\'astico de descuento entre los tiempos \(t\) y \(s\), con \(0 \leq t \leq s\). Bajo la medida de riesgo neutral \(\mathbb{Q}\), el teorema fundamental de la valorizaci\'on establece que el valor del portafolio en el tiempo \(t\) viene dado por
-\begin{equation}
-  V(t)
-  \;=\;
-  \mathbb{E}^{\mathbb{Q}}\!\left[
-    \sum_{s \geq t} H_s \, D(t,s)
-    \,\Big|\,
-    \mathcal{F}_t
-  \right],
-  \label{eq:PFV}
-\end{equation}
-donde \(\mathcal{F}_t\) es la informaci\'on disponible hasta el tiempo \(t\). Esta ecuaci\'on es el punto de partida para la valoraci\'on de todos los instrumentos del portafolio (bonos cero cup\'on, bonos cuponados y acciones).
-
-En el caso de instrumentos de renta fija con cupones deterministas, los flujos \(H_s\) son conocidos y pueden extraerse fuera de la esperanza en \eqref{eq:PFV}. Para las acciones, en cambio, los flujos dependen del precio aleatorio del subyacente y no se puede separar en general
-\[
-  \mathbb{E}^{\mathbb{Q}}\!\big[ H_s D(t,s) \,\big|\, \mathcal{F}_t \big]
-  \;\neq\;
-  \mathbb{E}^{\mathbb{Q}}\!\big[ H_s \,\big|\, \mathcal{F}_t \big]\,
-  \mathbb{E}^{\mathbb{Q}}\!\big[ D(t,s) \,\big|\, \mathcal{F}_t \big],
-\]
-por lo que la valoraci\'on de acciones se realiza siempre de forma conjunta con los factores de descuento mediante \'arboles binomiales y simulaciones.
-
-\subsection{Curva cero cup\'on y precios \(P(t,T)\)}
-
-En el proyecto se trabaja con la \emph{curva cero cup\'on} en \(t=0\) para colones y d\'olares, denotada por \(\rho(0,T)\) para distintos vencimientos \(T\). Sabemos que \(\tau(t,T) = T - t\), por lo que el precio de un bono cero cup\'on que paga 1 unidad monetaria en \(T\) se escribe como
-\begin{equation}
-  P(0,T)
-  \;=\;
-  \frac{1}{\bigl(1+\rho(0,T)\bigr)^{\tau(0,T)}}
-  \;=\;
-  \frac{1}{\bigl(1+\rho(0,T)\bigr)^{T}}.
-  \label{eq:P0T}
-\end{equation}
-
-
-Ademas para \(t \leq T\) el precio del bono cero cup\'on bajo la medida de riesgo neutral cumple
-\begin{equation}
-  P(t,T)
-  \;=\;
-  \mathbb{E}^{\mathbb{Q}}\!\big[\,D(t,T)\,\big|\,\mathcal{F}_t\big],
-  \label{eq:PTT}
-\end{equation}
-es decir, coincide con la esperanza del factor de descuento entre \(t\) y \(T\).
-
-\subsection{Valor del portafolio en \(t = 0\)}
-
-Para \(t=0\), la ecuaci\'on \eqref{eq:PFV} se reduce a
-\begin{equation}
-  V(0)
-  \;=\;
-  \sum_{s > 0} H_s\,P(0,s),
-  \label{eq:V0}
-\end{equation}
-ya que todos los flujos futuros se descuentan con la curva cero cup\'on observada en el mercado en el momento inicial. En este caso el valor del portafolio no tiene componente estoc\'astico.
-
-
-\subsection{Valor del portafolio en horizontes \(t > 0\)}
-
-Cuando se desea valorar el portafolio en un tiempo intermedio \(t > 0\) (por ejemplo, \(t=2{,}5\), \(5\), \(10\) o \(15\) a\~nos), la ecuaci\'on \eqref{eq:PFV} se mantiene:
-
-\begin{equation}
-  V(t)
-  \;=\;
-  \mathbb{E}^{\mathbb{Q}}\!\left[
-    \sum_{s \geq t} H_s\,D(t,s)
-    \,\Big|\,
-    \mathcal{F}_t
-  \right].
-  \label{eq:Vt}
-\end{equation}
-
-En una trayectoria simulada del \'arbol conjunto acci\'on–tasa, los flujos \emph{anteriores} a \(t\) ya se conocen en ese camino y se acumulan con las tasas que efectivamente ocurrieron en la trayectoria. Los flujos \emph{posteriores} a \(t\) se descuentan usando la \emph{expectativa de mercado} en \(t\), es decir, los precios \(P(t,s)\) del \'arbol de bonos en el nodo correspondiente a ese horizonte.
-
-\subsection{Probabilidades bajo la medida de riesgo neutral}
-
-Para que el modelo binomial sea consistente con el mercado y no permita
-oportunidades de arbitraje, se impone en cada período una relación entre
-los factores de subida y bajada y el activo libre de riesgo.
+Las inversiones denominadas en dólares se encuentran compuestas por:
 
 \begin{itemize}
-  \item para el árbol del precio de la acción,
-  \[
-    d_S \;<\; 1 + R(t,t+1) \;<\; u_S,
-  \]
-  donde $R(t,t+1)$ es la tasa libre de riesgo (de un período) obtenida a partir
-  de la curva bono cero cupón;
-
-  \item para el árbol de la tasa corta, trabajado en términos de factores de
-  descuento para los precios de bonos cero cupón $P(t,T)$, se exige que en
-  cada vencimiento $T$ los factores cumplan
-  \[
-    d_R(T) \;<\; 1 \;<\; u_R(T),
-  \]
+  \item \textbf{Bonos cero cupón}: tres títulos con vencimientos a 5, 10 y 16 años, con valores nominales de \$15\,000 cada uno.
+  \item \textbf{Bonos cuponados}: un bono internacional con cupón bianual del 7\%, vencimiento a 15 años y valor nominal de \$20\,000.
+  \item \textbf{Acciones internacionales}: 300 acciones de una empresa tecnológica, con precio actual de \$120 por acción.
 \end{itemize}
 
-Aquí $u_S,d_S$ son los factores de subida y bajada del precio de la acción,
-mientras que $u_R(T),d_R(T)$ son los factores de subida y bajada para los
-factores de descuento asociados a un bono cero cupón con vencimiento $T$.
-
-\medskip
-
-Bajo la medida de riesgo neutral $\mathbb{Q}_S \times \mathbb{Q}_r$, las probabilidades de subida:
-\[
-  \hat q_t
-  \;=\;
-  \text{probabilidad de subida en el árbol de tasa corta.}
-\]
-\[
-  \hat q_t(U_t)
-  \;=\;
-  \text{probabilidad de subida del precio de la acción en el nodo $U_t$ del árbol de acciones}.
-\]
-
-La  condición de ausencia de arbitraje implica:
-\[
-  \hat q\,u_R(2)
-  \;+\;
-  \bigl(1-\hat q\bigr)\,d_R(2)
-  \;=\;
-  1,
-\]
-de donde se obtiene
-\begin{equation}
-  \hat q
-  \;=\;
-  \frac{1 - d_R(2)}{\,u_R(2) - d_R(2)\,}.
-  \label{eq:q1-un-paso}
-\end{equation}
-En particular, con los factores binomiales indicados en las especificaciones
-técnicas del proyecto
-\[
-  u_R(2) = 1.0001,
-  \qquad
-  d_R(2) = 0.9999,
-\]
-se tiene
-\[
-  \hat q
-  \;=\;
-  \frac{1-0.9999}{1.0001-0.9999}
-  \;=\;
-  0.5.
-\]
-
-
-
-\medskip
-
-Además:
-\begin{itemize}
-  \item las probabilidades de subida del precio de la acción $\tilde q_2(t)$
-  son \emph{variables y estocásticas}, porque dependen de la trayectoria
-  seguida por la tasa corta $r_t$;
-
-  \item las probabilidades bajo $\mathbb{Q}$ se eligen de forma que el modelo
-  sea libre de arbitraje y los precios teóricos sean consistentes con la
-  curva cero cupón observada (es decir, con los precios $P(0,T)$ construidos
-  a partir de la curva $\rho(0,T)$).
-\end{itemize}
-
-
-
-
-\subsection{\'Arboles binomiales y modelo CRR}
-
-\subsubsection{\'Arbol del precio de la acci\'on}
-
-Sea \(S_0\) el precio inicial de la acci\'on. En el modelo de Cox–Ross–Rubinstein se asume que, en cada intervalo de longitud \(\Delta t\), el precio puede subir por un factor \(u(\Delta t)\) o bajar por un factor \(d(\Delta t)\). El \'arbol binomial recombinante tiene la forma
-\[
-  S_{t,j} = S_0 \, u(\Delta t)^{\,t-j} \, d(\Delta t)^{\,j},
-  \qquad t = 0,1,\dots,N,\quad j = 0,1,\dots,t,
-\]
-donde \(N\) es el n\'umero total de pasos hasta el horizonte de an\'alisis.
-
-La volatilidad instant\'anea del activo es \(\sigma\), la volatilidad de los incrementos logar\'itmicos a un paso \(\Delta t\) es aproximadamente \(\sigma^2 \Delta t\) y se tiene
-\begin{equation}
-  u(\Delta t) = e^{\sigma\sqrt{\Delta t}},
-  \qquad
-  d(\Delta t) = e^{-\sigma\sqrt{\Delta t}}.
-  \label{eq:u-d-CRR}
-\end{equation}
-Estos par\'ametros se estiman a partir de la serie de precios hist\'oricos de la acci\'on .
-
-\subsubsection{\'Arbol de tasa corta y factores de descuento}
-
-Para la tasa corta \(r_t\) se construye un \'arbol binomial an\'alogo, con factores de subida y bajada \(u_r(\Delta t)\) y \(d_r(\Delta t)\). En cada nodo \((t,j)\), la tasa \(r_{t,j}\) da lugar al factor de descuento elemental entre \(t\) y \(t+\Delta t\):
-\[
-  D(t,t+\Delta t)
-  \;=\;
-  e^{-r_{t,j}\,\Delta t}.
-\]
-
-A partir de estos factores se obtiene el precio de un bono cero cup\'on que paga 1 en \(T\):
-\[
-  P(t,T)
-  \;=\;
-  \mathbb{E}^{\mathbb{Q}}\!\left[
-    \prod_{u=t}^{T-\Delta t} D(u,u+\Delta t)
-    \,\Big|\,
-    \mathcal{F}_t
-  \right],
-\]
-coherente con la curva cero cup\'on en el nodo considerado.
-
-\subsubsection{\'Arbol conjunto acci\'on–tasa}
-
-El \'arbol conjunto acci\'on–tasa combina la evoluci\'on del precio de la acci\'on \(S_t\) y de la tasa corta \(r_t\) en un esquema \'unico. Cada nodo contiene la informaci\'on
-\[
-  \big(S_{t,j},\, r_{t,j},\,\tilde q_r(t,j),\,\bar q_S(t,j)\big),
-\]
-y modela simult\'aneamente el riesgo de mercado de la acci\'on y el riesgo de tasas de inter\'es. Las simulaciones de Monte Carlo del portafolio se construyen recorriendo este \'arbol con las probabilidades \(\tilde q_r(t,j)\) y \(\bar q_S(t,j)\) bajo \(\mathbb{Q}\).
-
-\subsection{Simulaciones y valor esperado num\'erico}
-
-Para aproximar num\'ericamente el valor del portafolio en los distintos horizontes, se generan \(N_{\text{sim}} \approx 10\,000\) trayectorias del \'arbol conjunto acci\'on–tasa. Sea \(V^{(k)}(t)\) el valor del portafolio en el horizonte \(t\) en la simulaci\'on \(k\), \(k = 1,\dots,N_{\text{sim}}\). El \emph{valor esperado num\'erico} en \(t\) se define como
-\begin{equation}
-  \widehat{V}(t)
-  \;=\;
-  \frac{1}{N_{\text{sim}}}
-  \sum_{k=1}^{N_{\text{sim}}} V^{(k)}(t),
-  \label{eq:Vnum}
-\end{equation}
-y se compara con el valor esperado te\'orico obtenido a partir de \eqref{eq:Vt} y de los precios \(P(t,T)\).
-
-
-\subsection{Medidas de riesgo: VaR y valor en riesgo condicional (CVaR)}
-
-
-Sea \(X\) una variable aleatoria que representa una p\'erdida (o retorno) con funci\'on de distribuci\'on \(F_X\). Para un nivel de probabilidad \(p\), \(0 < p < 1\), el \emph{valor en riesgo} \(VaR_p\) se define como el cuantil de nivel \(p\):
-\[
-  F_X\big(VaR_p\big)
-  \;=\;
-  \Pr[X \leq VaR_p]
-  \;=\;
-  p.
-\]
-El \(VaR_p\) es la m\'axima p\'erdida que se excede en un periodo espec\'ifico con probabilidad \(1-p\).
-
-El \emph{valor en riesgo condicional} \(CVaR_p(X)\) representa la esperanza de la p\'erdida condicional a exceder el \(VaR_p\):
-\begin{equation}
-  CVaR_p(X)
-  \;=\;
-  \mathbb{E}\!\big[ X \,\big|\, X \geq VaR_p \big].
-  \label{eq:CVaR-general}
-\end{equation}
-
-Para cada horizonte \(t>0\) se utiliza la distribuci\'on simulada del valor del portafolio, \(\{V^{(k)}(t)\}_{k=1}^{N_{\text{sim}}}\). Ordenando estos valores,
-\[
-  V^{(1)}(t) \leq V^{(2)}(t) \leq \dots \leq V^{(N_{\text{sim}})}(t),
-\]
-el VaR asociado a un nivel \(p\) se aproxima por
-\[
-  VaR_p(t) \approx V^{(k_p)}(t),
-  \qquad
-  k_p = \big\lfloor p\,N_{\text{sim}} \big\rfloor,
-\]
-y el CVaR se obtiene como el promedio de los valores en la cola correspondiente:
-\[
-  CVaR_p(t)
-  \;\approx\;
-  \frac{1}{k_p}
-  \sum_{k=1}^{k_p} V^{(k)}(t).
-\]
-
-Estas medidas se calculan para cada horizonte \(t>0\), separando los resultados en colones y d\'olares y reportando tambi\'en el valor total en colones usando el tipo de cambio de no arbitraje.
-
-\subsection{Expansi\'on accionaria}
-
-En la Secci\'on II del proyecto se analiza el impacto de adquirir 200 acciones adicionales de Nacional de Energ\'ia S.A. al final del a\~no 15, utilizando distintas estrategias. Todas ellas se valoran bajo la misma l\'ogica de \eqref{eq:PFV} y los \'arboles binomiales construidos:
+\section{Supuestos y especificaciones técnicas del proyecto}
 
 \begin{itemize}
-\item \textbf{Compra directa}: en esta estrategia no se fija hoy ningún
-precio; simplemente se adquieren las 200 acciones en \(T=15\) al precio
-de mercado \(S_{15}\). 
-
-  \item \textbf{Contrato forward}: se firma hoy un contrato forward con precio fijo \(K_f\) y precio del contrato igual a cero en \(t=0\). El flujo en \(T=15\) es \(200\,(S_{15}-K_f)\). El valor de \(K_f\) se determina de forma que el precio del forward sea cero, utilizando la curva cero cup\'on y el \'arbol de la acci\'on.
-  \item \textbf{Contrato de futuro}: el futuro tiene precio marcado a mercado con ajustes de m\'argen cada seis meses. En el \'arbol, esto implica una secuencia de flujos intermedios de m\'argen que deben acumularse al horizonte 15 usando las tasas simuladas, adem\'as del flujo final asociado a la posici\'on en acciones.
-  \item \textbf{Opci\'on call europea}: se compra hoy una call europea que permite adquirir las 200 acciones en \(T=15\) a un precio de ejercicio \(K = K_f - 5000\). En \(T=15\), el flujo adicional es
+    \item Se trabaja con tiempos discretos mensuales.
+    \item Los modelos utilizados asumen:
+    \begin{itemize}
+      \item Supuestos de mercado sin fricciones: no hay costos de transacción, se permite la venta en corto y es posible comprar o vender cualquier cantidad del activo.
+      \item El precio del activo evoluciona mediante factores de subida y bajada en cada paso del árbol binomial.
+    \end{itemize}
+  \item Los factores binomiales para la tasa corta en colones y dólares (árbol de tasas) se fijan como
   \[
-    200\,\max\{S_{15} - K, 0\}.
-  \]
-  \item \textbf{Opci\'on call americana}: se compra una call americana con el mismo precio de ejercicio \(K = K_f - 5000\) y vencimiento en \(T=15\). A diferencia de la call europea, la call americana puede ejercerse en cualquier momento hasta \(T=15\), por lo que en el \'arbol se debe evaluar nodo a nodo si conviene ejercer o mantener la opci\'on.
-\end{itemize}
-
-En todos los casos, el portafolio final en \(T=15\) se obtiene sumando el valor de la cartera original m\'as el efecto adicional de cada estrategia. Luego, se calcula el \emph{escenario esperado num\'erico} (promedio de simulaciones) para comparar las distintas alternativas, tal como solicita el enunciado.
-
-\subsection{Especificaciones t\'ecnicas del proyecto}
-
-Finalmente, se resumen las especificaciones t\'ecnicas que condicionan todo el an\'alisis:
-
-\begin{itemize}
-  \item Los factores binomiales a emplear para la tasa corta en colones y d\'olares (\'arbol de tasas) se fijan en el proyecto como
-  \[
-    u^{(2)}_{\text{CRC}} = 1{,}0001,
+    u{(2)}_{\text{CRC}} = 1{,}0001,
     \quad
-    d^{(2)}_{\text{CRC}} = 0{,}9999,
+    d{(2)}_{\text{CRC}} = 0{,}9999,
     \qquad
-    u^{(2)}_{\text{USD}} = 1{,}00005,
+    u{(2)}_{\text{USD}} = 1{,}00005,
     \quad
-    d^{(2)}_{\text{USD}} = 0{,}99995.
+    d{(2)}_{\text{USD}} = 0{,}99995.
   \]
-  \item Para el \'arbol binomial de acciones se estiman los par\'ametros \(u(\Delta t)\) y \(d(\Delta t)\) seg\'un el modelo de Cox–Ross–Rubinstein, utilizando los datos de precios proporcionados y la relaci\'on \eqref{eq:u-d-CRR}.
-  \item Se asume que todos los \'arboles binomiales son \emph{recombinados}.
-  \item La curva cero cup\'on \(\rho(0,T)\) en colones y d\'olares se toma del archivo \emph{Curvas Cero Cup\'on}; se usa \(\tau(t,T)=T-t\) y se construyen los precios \(P(0,T)\) mediante \eqref{eq:P0T}.
-  \item Los modelos se programan sin utilizar librer\'ias prefabricadas para \'arboles binomiales, de forma que todo el c\'alculo est\'e explicitado en el c\'odigo.
-  \item En todos los resultados se presenta la informaci\'on separada para colones y d\'olares, y se incluye el valor total del portafolio en colones utilizando el tipo de cambio de no arbitraje correspondiente al momento del an\'alisis.
+
+  \item Para el árbol binomial de la acción se estiman los parámetros \(u_S\) y \(d_S\) según el modelo de Cox-Ross-Rubinstein, utilizando los datos de precios disponibles y la relación
+  \begin{equation}
+    u(\Delta t) = e^{\sigma\sqrt{\Delta t}},
+    \qquad
+    d(\Delta t) = e^{-\sigma\sqrt{\Delta t}},
+    \label{eq:u-d-CRR}
+  \end{equation}
+  donde \(\sigma\) es la volatilidad instantánea del activo. En consecuencia, la varianza de los incrementos logarítmicos en un paso \(\Delta t\) es aproximadamente \(\sigma^2 \Delta t\). Los parámetros \(u_S\) y \(d_S\) se obtienen a partir de la serie de precios históricos de la acción. Como todos los árboles se aproximan de manera mensual, $\Delta t = 1$.
+
+  \item Se asume que todos los árboles binomiales son recombinados. En el modelo de Ho--Lee esto se logra imponiendo
+  \[
+    k^{T-1} = \frac{d(T)}{u(T)},
+    \qquad
+    k = \frac{d(2)}{u(2)}.
+  \]
+
+  \item Los modelos se programan sin utilizar librerías específicas para árboles binomiales, de modo que todos los cálculos se implementan de forma explícita en el código.
+
+  \item En todos los resultados se presenta la información separada para colones y dólares. Además, se reporta el valor total del portafolio en colones utilizando el tipo de cambio de no arbitraje correspondiente al momento del análisis.
 \end{itemize}
-
-
-
-
 
 \section{Metodología}
 
-La valoración del portafolio de \textit{Smart Investments} se llevó a cabo mediante una combinación de técnicas de valoración determinista en el instante inicial \(t=0\) y simulación estocástica para horizontes futuros, utilizando un enfoque consistente con la curva cero cupón provista y modelos binomiales para tasas de interés y precios accionarios.
+La valoración del portafolio de \textit{Smart Investments S.A.} se llevó a cabo mediante una combinación de técnicas de valoración determinista en el instante inicial \(t=0\) y simulación estocástica para horizontes futuros. Para ello, se utilizó el modelo Ho-Lee para realizar árboles de precios y tasas, y el modelo de árboles conjuntos para la realización de los árboles de acciones.
 
-\subsection{Curva cero cupón y tasas forward}
+\subsection{Curva cero cupón y precios forward}
 
-El punto de partida del análisis es la curva cero cupón en colones y dólares, suministrada en formato CSV, la cual especifica las tasas spot \(\rho(0,T)\) para distintos vencimientos \(T\). Dicha curva constituye la única fuente de información de tasas en el instante \(t=0\).
+El punto de partida del análisis es la curva cero cupón en colones y dólares, la cual especifica las tasas anualizadas \(\rho(0,T)\) para distintos vencimientos \(T\). Dicha curva constituye la única fuente de información de tasas en el instante \(t=0\).
 
 A partir de la curva cero cupón se definen los factores de descuento como:
 \[
@@ -367,62 +108,143 @@ P(0,T) = (1 + \rho(0,T))^{-T},
 \]
 donde \(T\) se expresa en años.
 
-Con estos factores de descuento se construyen las tasas \textit{forward} mediante la relación estándar:
+Con estos factores de descuento se construyen las tasas \textit{forward} mediante la relación:
 \[
-F(0; S,T) = \frac{P(0,T)}{P(0,S)}, \qquad 0 \leq S < T,
+P_F(0; S,T) = \frac{P(0,T)}{P(0,S)}, \qquad 0 \leq S < T,
 \]
-las cuales garantizan que toda la estructura de tasas utilizada en el modelo sea consistente con la curva cero cupón original. En particular, los factores de descuento empleados posteriormente en la valoración y simulación se derivan directamente de esta función \texttt{forward}.
+las cuales garantizan que toda la estructura de tasas utilizada en el modelo sea consistente con la curva cero cupón original. En particular, los factores de descuento empleados posteriormente en la valoración y simulación se derivan directamente de la función \texttt{forward}.
 
-\subsection{Modelo de tasas de interés: Ho--Lee discreto}
+\subsection{Modelo de tasas de interés: Ho–Lee}
 
-La evolución estocástica de las tasas de interés se modela mediante el esquema binomial de Ho--Lee en tiempo discreto. Bajo este modelo, la tasa corta evoluciona en pasos mensuales siguiendo factores multiplicativos \(u(2)\) y \(d(2)\), definidos según el enunciado del proyecto. La probabilidad neutral al riesgo asociada al modelo se obtiene como:
+En el enfoque Ho–Lee en tiempo discreto, se construyó un árbol binomial para la tasa corta con pasos mensuales $\Delta t=\tfrac{1}{12}$ años. En cada nodo la tasa puede subir o bajar mediante los factores
 \[
-q = \frac{1 - d(2)}{u(2) - d(2)}.
+u(t) \text{ y } d(t)
 \]
-
-La tasa corta inicial se calibra utilizando la tasa \textit{forward} de corto plazo extraída de la curva cero cupón:
+y se define
 \[
-r_0 = -\log\bigl(P(0,\Delta t)\bigr),
+k=\frac{d(2)}{u(2)}\in(0,1).
 \]
-con \(\Delta t = 1/12\) años. En cada paso del tiempo, la tasa corta se ajusta de manera que el modelo replique exactamente la estructura \textit{forward} observada en \(t=0\), asegurando ausencia de arbitraje.
 
-\subsection{Modelo del precio de las acciones}
+La tasa corta inicial se fija a partir del descuento de un mes:
+$$
+r_0=-\log\bigl(P(0,\Delta t)\bigr),
+\qquad \Delta t=\tfrac{1}{12}.
+$$
+Para cada mes, la tasa en un nodo se obtiene ajustando ese forward con el desplazamiento del árbol:
+$$
+r_{t+\Delta t} =
+-\log\bigl(P_F(0,t,t+\Delta t)
+-\log d(t+1)
++U_t\log k
+$$
+donde:
+\begin{itemize}
+    \item $U_t$ es el número de movimientos “arriba” acumulados hasta el nodo (según el camino $\omega$)
+    \item $d(t)=\dfrac{k^{i-1}}{(1-q)k^{i-1}+q}$
+\end{itemize}
 
-El precio de las acciones se modela mediante un árbol binomial tipo Cox--Ross--Rubinstein (CRR). Los factores de subida y bajada \(u_S\) y \(d_S\) se estiman a partir de la volatilidad histórica de los rendimientos logarítmicos de las acciones, tal como se establece en el modelo CRR estándar.
 
-En cada paso temporal, la probabilidad neutral al riesgo se ajusta dinámicamente según la tasa corta simulada, de manera que:
+La probabilidad de “subir” se toma constante en todos los nodos:
+$$
+q=\frac{1-d(2)}{u(2)-d(2)},
+$$
+y se utiliza tanto en el árbol de tasas cortas como en el árbol de precios.
+
+\subsubsection{Modelo Ho–Lee para precios}
+
+Además del árbol de tasas, se construye un árbol de precios. Para ello, se construye:
+
+\paragraph{Rama ``arriba''}
+La función \texttt{precios\_arriba} construye la trayectoria de precios asociada a la rama superior del árbol. 
+Para ello se utiliza la relación
 \[
-q_t = \frac{e^{r_t \Delta t} - d_S}{u_S - d_S},
+P(T-1,\;T \mid U(T-1)=T-1)=u(T)\,P_F(0,\;T-1,\;T).
 \]
-donde \(r_t\) corresponde a la tasa corta simulada mediante el modelo de Ho--Lee.
+
+\paragraph{Precios para cualquier camino}
+Para un camino arbitrario, con desviaciones respecto de la rama superior, la función \texttt{otros\_precios} ajusta los precios multiplicando por potencias de
+\[
+k=\frac{d_2}{u_2},
+\]
+tantas veces como sea necesario para reflejar cuántos descensos se han acumulado antes del nodo, utilizando
+\[
+k^{T-1}=\frac{d(T)}{u(T)}.
+\]
+
+\subsection{Árbol conjunto de tasas de interés y precios de la acción}
+
+Se construye un árbol conjunto que combina:
+\begin{enumerate}
+  \item la tasa corta $r_t$ bajo el modelo de Ho-Lee;
+  \item el precio de la acción $S_t$ bajo un esquema binomial.
+\end{enumerate}
+
+\subsubsection*{Tasas de interés (Ho-Lee)}
+
+En la implementación, la función \texttt{ho\_lee} entrega el vector $r_t$ y el proceso $U_t$.  
+
+\subsubsection*{Precio de la acción}
+
+En cada paso, el precio de la acción satisface
+$$
+S_{t+\Delta t} \in \{ S_t u_S,\; S_t d_S \},
+$$
+
+Para la implementación, se asegura el mercado libre de arbitraje, de modo que se define la probabilidad de subida de la acción en cada nodo como:
+$$
+q_i = \frac{e^{r_t \Delta t} - d_S}{u_S - d_S},
+$$
+y se limita a $[0,1]$ de la siguiente forma: si $\exp(r_t) \ge u_S$ se fija $q_i = 1$, si $\exp(r_t) \le d_S$ se fija $q_i = 0$, y en caso contrario se usa la expresión anterior.
+
+\subsubsection*{Probabilidades del árbol conjunto}
+
+En cada periodo, dadas $q$ (tasa) y $q_i$ (acción), las probabilidades conjuntas son:
+\begin{itemize}
+  \item tasa sube y acción sube: $q\,q_i$,
+  \item tasa sube y acción baja: $q\,(1 - q_i)$,
+  \item tasa baja y acción sube: $(1 - q)\,q_i$,
+  \item tasa baja y acción baja: $(1 - q)\,(1 - q_i)$.
+\end{itemize}
+
+En la función \texttt{conjunto}, la columna \texttt{proba\_S} almacena la probabilidad acumulada del camino hasta cada nodo, actualizada multiplicando la probabilidad previa por el factor correspondiente según el valor de \texttt{omegas} y del Bernoulli con parámetro $q_i$ que gobierna el movimiento de la acción.
 
 \subsection{Simulación de Monte Carlo}
 
 Para evaluar la distribución futura del valor del portafolio, se implementa un procedimiento de simulación de Monte Carlo con \(N = 10{,}000\) trayectorias independientes. Cada trayectoria consiste en:
 
 \begin{enumerate}
-  \item La simulación de una trayectoria mensual de tasas cortas utilizando el modelo de Ho--Lee.
-  \item La simulación simultánea del precio de la acción bajo el modelo CRR, empleando las tasas cortas simuladas para el cálculo de probabilidades neutrales al riesgo.
+  \item La simulación de una trayectoria mensual de tasas cortas utilizando el modelo de Ho-Lee.
+  \item La simulación simultánea del precio de la acción, empleando las tasas cortas simuladas para el cálculo de probabilidades neutrales al riesgo.
   \item La valoración del portafolio en distintos horizontes temporales \(t \in \{0,\;2.5,\;5,\;10,\;15\}\) años.
 \end{enumerate}
 
-En cada horizonte, el valor del portafolio se calcula como la suma del valor de las acciones y el valor presente de los bonos (cero cupón y cuponados), descontando los flujos remanentes utilizando la tasa corta vigente en dicho horizonte.
+En cada horizonte, el valor del portafolio se calcula como la suma del valor de las acciones y el valor presente de los bonos (cero cupón y cuponados). Para descontar los flujos, se utilizan los precios calculados en el árbol de precios; y para acumular, las tasas cortas simuladas en el árbol de tasas.
 
 \subsection{Medidas de desempeño y riesgo}
 
-A partir de la distribución empírica obtenida mediante las simulaciones, se estiman las siguientes medidas para cada horizonte temporal:
+A partir de la distribución empírica obtenida mediante simulación, se calculan, para cada horizonte temporal, las siguientes medidas sobre la variable aleatoria $X$ que representa el valor del portafolio:
 
 \begin{itemize}
-  \item Valor esperado numérico, calculado como la media muestral.
-  \item Valor en Riesgo (VaR) para niveles de confianza del 95\% y 30\%.
-  \item Valor en Riesgo Condicional (CVaR), definido como la esperanza condicional del valor del portafolio en las colas correspondientes de la distribución.
+  \item \textbf{Valor esperado}, estimado mediante la media muestral de $X$.
+
+  \item \textbf{Valor en Riesgo (VaR)} para niveles de confianza del 95\% y 30\%, definido como el cuantil $p$ de la distribución de $X$:
+  $$
+    F_X(\mathrm{VaR}_p)
+    = \Pr\bigl[X \le \mathrm{VaR}_p\bigr]
+    = p.
+  $$
+
+  \item \textbf{Valor en Riesgo Condicional (CVaR)}, definido como la esperanza condicional de $X$ en la cola correspondiente de la distribución:
+  $$
+    \mathrm{CVaR}_p(X)
+    = \mathbb{E}\bigl[X \mid X \ge \mathrm{VaR}_p\bigr].
+  $$
 \end{itemize}
 
-Estas medidas permiten caracterizar tanto el comportamiento esperado del portafolio como su exposición a escenarios adversos y favorables, proporcionando una base cuantitativa para el análisis de riesgo y la toma de decisiones.
 
 \section{Resultados}
 
-En esta sección se presentan los resultados obtenidos a partir de la construcción de árboles binomiales, del árbol conjunto acción--tasa y de la simulación de trayectorias mediante Monte Carlo, de acuerdo con los procedimientos descritos en la metodología.
+En esta sección se presentan los resultados obtenidos a partir de la construcción de árboles binomiales, del árbol conjunto acción-tasa y de la simulación de trayectorias mediante Monte Carlo, de acuerdo con los procedimientos descritos en la metodología.
 
 \subsection{Árbol de precios de la acción}
 

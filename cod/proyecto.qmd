@@ -14,7 +14,7 @@ output:
     df_print: paged
 ---
 
-```{r cargar curva cero cupón}
+```{r cargar curva cero cupón, echo = FALSE}
 curva <- read.csv("../data/Curva_0C.csv", sep = ";", col.names = c("vencimiento", "colones", "dolares"), dec = ",")
 curva$vencimiento <- as.numeric(curva$vencimiento)
 curva$colones     <- as.numeric(curva$colones)
@@ -24,7 +24,7 @@ curva$dolares     <- as.numeric(curva$dolares)
 # Funciones Utilizadas
 ## Precios Forward
 ```{r, echo = FALSE}
-set.seed(123) 
+set.seed(123) #reproducibilidad
 ```
 
 ```{r, calcular precio forward}
@@ -43,8 +43,8 @@ forward <- function(t, S, T, moneda){
 
 ## Tasas cortas
 ```{r}
-# Función para generar árbol de tasas de interés
-# Recibe u(2), d(2), número de iteraciones
+# Función para generar árbol de tasas cortas
+# Recibe u(2), d(2), número de iteraciones, moneda y camino a seguir (omegas)
 ho_lee <- function(u_2, d_2, n, moneda, bern){
   k <- d_2/u_2
   q <- (1-d_2)/(u_2 - d_2)
@@ -74,7 +74,7 @@ ho_lee <- function(u_2, d_2, n, moneda, bern){
       U <- U + 1
     }
     resultados$U_t[i+1] <- U
-    d <- k^(i-1)/((1-q)*k^(i-1) + q)
+    d <- k^(i)/((1-q)*k^(i) + q) #d(t + 1)
     resultados$d[i+1] <- d
     r_t <- -log(forward(0, S, S+1/12, moneda)) - log(d) + U*log(k)
     resultados$r_t[i+1] <- r_t
@@ -85,6 +85,8 @@ ho_lee <- function(u_2, d_2, n, moneda, bern){
 
 ## Precios
 ```{r}
+# Crear rama superior de árbol de precios
+# Recibe u(2), d(2), número de iteraciones y moneda
 precios_arriba <- function(u_2, d_2, n, moneda){
   k <- d_2/u_2
   q <- (1-d_2)/(u_2 - d_2)
@@ -106,12 +108,15 @@ precios_arriba <- function(u_2, d_2, n, moneda){
     i <- i + 1
   }
   resultados$precio[n] <- u_2*resultados$precio[n - 1]/(u(n - 1)*forward(0, n - 2/12, n - 1/12, moneda))
-  resultados$precio[n + 1] <- 1
+  resultados$precio[n + 1] <- 1 #P(T, T) = 1
   return(resultados)
 }
 ```
 
 ```{r}
+# Crear árbol para otros precios
+# Utiliza la función anterior, y va multiplicando potencias de k = d(2)/u(2)
+# Recibe u(2), d(2), número de iteraciones, moneda, y camino a seguir
 otros_precios <- function(u_2, d_2, n, moneda, omegas){
   sup <- precios_arriba(u_2, d_2, n, moneda)
   k <- d_2/u_2
@@ -131,6 +136,8 @@ otros_precios <- function(u_2, d_2, n, moneda, omegas){
 
 ## Árbol Conjunto
 ```{r}
+# Crear árbol de acciones
+# Recibe u(2), d(2), número de iteraciones, moneda, camino a seguir, proporciones fijas de subida y bajada de acciones, precio actual de la acción
 conjunto <- function(u_2, d_2, n, moneda, omegas, uS, dS, accion){
   res <- ho_lee(u_2, d_2, n, moneda, omegas)
   r <- res$r_t
@@ -144,7 +151,7 @@ conjunto <- function(u_2, d_2, n, moneda, omegas, uS, dS, accion){
   resultados$S[1] <- accion
   # Separamos la primera iteración
   q_i <- ifelse(exp(r[1]) > uS, (exp(log(uS)) - dS)/(uS - dS), ifelse(exp(r[1]) < dS, (exp(log(dS)) - dS)/(uS - dS), (exp(r[1]) - dS)/(uS - dS)))
-  bern <- rbinom(n = 1, size = 1, prob = q_i)
+  bern <- rbinom(n = 1, size = 1, prob = q_i) #omega para acción
   if(bern == 1){
     resultados$S[2] <- resultados$S[1]*uS
     resultados$proba_S[2] <- q_i
@@ -155,9 +162,10 @@ conjunto <- function(u_2, d_2, n, moneda, omegas, uS, dS, accion){
   }
   for (i in 2:n){
     q_i <- ifelse(exp(r[i]) > uS, (exp(log(uS)) - dS)/(uS - dS), ifelse(exp(r[i]) < dS, (exp(log(dS)) - dS)/(uS - dS), (exp(r[i]) - dS)/(uS - dS)))
-    bern <- rbinom(n = 1, size = 1, prob = q_i)
+    bern <- rbinom(n = 1, size = 1, prob = q_i) # omega para acción
     if(bern == 1){
       resultados$S[i + 1] <- resultados$S[i]*uS
+      # guardar propabilidades de caminos
       if(omegas[i - 1] == 1){
         resultados$proba_S[i + 1] <- resultados$proba_S[i]*q_i*q
       }
@@ -168,8 +176,9 @@ conjunto <- function(u_2, d_2, n, moneda, omegas, uS, dS, accion){
     }
     else{
       resultados$S[i + 1] <- resultados$S[i]*dS
+      # guardar propabilidades de caminos
       if(omegas[i - 1] == 1){
-        resultados$proba_S[i + 1] <- resultados$proba_S[i]*(1 - q_i)*q
+        resultados$proba_S[i + 1] <- resultados$proba_S[i]*(1 - q_i)*q 
       }
       else{
         resultados$proba_S[i + 1] <- resultados$proba_S[i]*(1 - q_i)*(1 - q)
@@ -183,18 +192,20 @@ conjunto <- function(u_2, d_2, n, moneda, omegas, uS, dS, accion){
 
 ## Opción call europea
 ```{r}
+# Valorar la opción europea al momento de ejercer la opción
 # contrato: precio del contrato, pagado en el momento 0
 # K: precio de ejercicio del contrato
 # nsim: número de simulaciones
 # omega_sim: lista de omegas
 # cant: cantidad de acciones
+# n: cantidad de periodos hasta vencimiento
 europea <- function(u_2, d_2, n, moneda, omega_sim, uS, dS, accion, contrato, K, nsim, cant){
   sim_S <- data.frame(aporte = rep(NA_real_, nsim))
-
   for(i in 1:nsim){
     omegas <- omega_sim[[i]]
     camino <- conjunto(u_2, d_2, n, moneda, omegas, uS, dS, accion)
-    sim_S$aporte[i] <- cant*(max(camino$S[n + 1] - K, 0)-exp(sum(camino$r_t))*contrato)
+    # Aporte = H_T - valor futuro del precio del contrato
+    sim_S$aporte[i] <- cant*(max(camino$S[n + 1] - K, 0)-exp(sum(camino$r_t))*contrato) 
   }
   return(sim_S)
 }
@@ -237,9 +248,9 @@ dS
 
 
 ### Dolares
-Como $u(2) = 1.0005$ y $d(2) = 0.99995$, sabemos que $q = \frac{(1-d(T))}{u(T)-d(T)}$ para cualquier T, entonces $q = 0.5$
+Como $u(2) = 1.00005$ y $d(2) = 0.99995$, sabemos que $q = \frac{(1-d(T))}{u(T)-d(T)}$ para cualquier T, entonces $q = 0.5$
 ```{r}
-q_dol <- (1-0.99995)/(1.0005 - 0.99995)
+q_dol <- (1-0.99995)/(1.00005 - 0.99995)
 q_dol
 ```
 Para estimar los parámetros de subida  bajada de las acciones, utilizamos el Modelo Cox-Ross-Rubinstein. Por tanto, usamos la fórmula $\sigma^2*\Delta t = \ln(\frac{S_{t + \Delta t}}{S_t})$; en este caso, tanto las acciones como las tasas avanzan mensualmente, por tanto, $\Delta t = 1$
@@ -383,7 +394,7 @@ omega_sim_dol <- replicate(
   rbinom(n = n_pasos, size = 1, prob = q_dol),
   simplify = FALSE
 )
-horizontes <- c(2.5, 10, 15)
+horizontes <- c(2.5, 5, 10, 15)
 pasos_h    <- as.integer(horizontes * 12)
 ```
 
@@ -581,6 +592,7 @@ write.csv(
 ### Bonos cuponados
 
 ```{r}
+# Valor de bonos cuponados en los horizontes
 simular_bonos_cuponados <- function(T_bonos, tasa, freq, nominal,
                                        u2, d2, n_pasos,
                                        omega_sim, horizontes,
@@ -772,10 +784,12 @@ write.csv(
 ```
 
 ## Análisis de Riesgo
+
 ### Pérdida
+Se analiza la pérdida por escenario desde el valor esperado:
 ```{r}
 tc_mat <- matrix(tc_h, nrow = n_sims, ncol = length(horizontes), byrow = TRUE)
-
+# Valores de simulaciones
 valor_col_path <- V_acc_col_path +
                   total_bcc_col_path +
                   res_bc_col$total_path
@@ -785,7 +799,7 @@ valor_dol_path <- V_acc_dol_path +
                   res_bc_dol$total_path
 
 V_port_total_col_path <- valor_col_path + valor_dol_path * tc_mat
-
+# media empírica. Ante falta de información teórica, se toma como valor esperado
 precio_teorico <- colMeans(V_port_total_col_path)
 
 benchmark_mat <- matrix(
@@ -796,10 +810,11 @@ benchmark_mat <- matrix(
 )
 
 
-loss_path <- benchmark_mat - V_port_total_col_path # teórico - escenario
+loss_path <- benchmark_mat - V_port_total_col_path # media empírica - escenario
 ```
 
 ```{r}
+# Escenario pesimista: VaR 95%
 p_pes  <- 0.95
 n_h    <- ncol(loss_path)
 
@@ -812,7 +827,7 @@ for (j in seq_len(n_h)) {
   CVaR_95[j] <- mean(L[L >= VaR_95[j]]) 
 }
 
-# Escenario optimista: VaR y "CVaR" al 30% usando la cola inferior
+# Escenario optimista: VaR y "CVaR" al 30%
 p_opt <- 0.30
 
 VaR_30  <- numeric(n_h)
@@ -821,7 +836,7 @@ CVaR_30 <- numeric(n_h)
 for (j in seq_len(n_h)) {
   L <- loss_path[, j]
   VaR_30[j]  <- as.numeric(quantile(L, probs = p_opt, names = FALSE))
-  CVaR_30[j] <- mean(L[L <= VaR_30[j]])  # cola inferior (escenario optimista)
+  CVaR_30[j] <- mean(L[L <= VaR_30[j]]) 
 }
 
 resumen_riesgo <- data.frame(
@@ -848,10 +863,10 @@ write.csv(
 ```
 
 ### Valor del portafolio
+Se analiza el valor del portafolio, sin compararlo con nada
 ```{r}
 V_mat <- V_port_total_col_path
 n_h   <- ncol(V_mat)
-
 
 # Escenario pesimista
 
@@ -928,7 +943,7 @@ for (i in 1:n_sims) {
     accion = S0_ne
   )
   
-  S15_ne[i] <- camino_i$S[nrow(camino_i)]
+  S15_ne[i] <- camino_i$S[nrow(camino_i)] # Valor final de la acción en cada escenario
 }
 
 aporte_directa <- 200 * S15_ne
@@ -948,7 +963,7 @@ Kf_ne      <- S0_ne * exp(15 * 12 * 0.0035)
 K_call_eur <- Kf_ne - 5000
 
 n_calls         <- 200
-precio_0_call   <- 0 #no tomamos en cuenta el precio del contrato 
+precio_0_call   <- 0  # no tomamos en cuenta el precio del contrato 
 res_eur_2d <- europea(
   u_2       = u2_col,
   d_2       = d2_col,
