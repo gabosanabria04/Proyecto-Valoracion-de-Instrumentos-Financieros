@@ -394,7 +394,7 @@ omega_sim_dol <- replicate(
   rbinom(n = n_pasos, size = 1, prob = q_dol),
   simplify = FALSE
 )
-horizontes <- c(2.5, 10, 15)
+horizontes <- c(2.5, 5, 10, 15)
 pasos_h    <- as.integer(horizontes * 12)
 ```
 
@@ -592,6 +592,7 @@ write.csv(
 ### Bonos cuponados
 
 ```{r}
+# Valor de bonos cuponados en los horizontes
 simular_bonos_cuponados <- function(T_bonos, tasa, freq, nominal,
                                        u2, d2, n_pasos,
                                        omega_sim, horizontes,
